@@ -1,37 +1,120 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Cafe Order System ☕📱
 
-## Getting Started
+A **QR-based Cafe Order System** built with [Next.js](https://nextjs.org), allowing customers to view the menu and place orders by scanning a QR code at their table. Cafe owners can manage their menu using an intuitive dashboard.
+This project includes **email and phone number authentication**, and a complete **menu management system**.
 
-First, run the development server:
+---
+
+## ✨ Features
+
+* ✅ **Authentication with Email and Phone OTP Verification**
+* 🍽️ **Add New Menu Items** (Name, Price, Description, Image, etc.)
+* 📋 **All Items Page** (View all available menu items instantly)
+* 📱 **QR Code-Based Access** *(coming soon)*
+* 🧑‍🍳 **Admin Dashboard** *(in progress)*
+* 💳 **Order Placement & Payment Flow** *(coming soon)*
+
+---
+
+## 📁 Tech Stack
+
+* **Framework**: Next.js 14 (App Router)
+* **Database**: MongoDB Atlas
+* **ORM**: Mongoose
+* **Authentication**: NextAuth (with Credentials Provider)
+* **Phone Verification**: Twilio
+* **Form Handling**: React Hook Form + Zod
+* **Styling**: Tailwind CSS
+* **Deployment**: Vercel *(recommended)*
+
+---
+
+## 🚀 Getting Started
+
+Clone the repository and install dependencies:
+
+```bash
+git clone https://github.com/your-username/cafe-order-system.git
+cd cafe-order-system
+npm install
+```
+
+Run the development server:
 
 ```bash
 npm run dev
 # or
 yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) in your browser to view the app.
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 🔐 Environment Variables
 
-## Learn More
+Create a `.env.local` file in the root and add the following:
 
-To learn more about Next.js, take a look at the following resources:
+```env
+MONGODB_URI=your_mongodb_connection_string
+NEXTAUTH_SECRET=your_secret_key
+NEXTAUTH_URL=http://localhost:3000
+TWILIO_ACCOUNT_SID=your_twilio_sid
+TWILIO_AUTH_TOKEN=your_twilio_auth_token
+TWILIO_SERVICE_ID=your_twilio_service_id
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 📦 Folder Structure
 
-## Deploy on Vercel
+```bash
+.
+├── app/                  # App Router pages
+│   ├── auth/             # Sign-in, Sign-up, OTP verification
+│   ├── menu/             # All Items, Add Item pages
+│   └── layout.js
+├── components/           # Reusable UI components
+├── lib/                  # DB connection, helper functions
+├── model/                # Mongoose models (e.g., Owner, MenuItem)
+├── public/               # Static files (images, etc.)
+├── styles/               # Tailwind and global CSS
+├── utils/                # Utility functions (e.g., token handler)
+└── ...
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+---
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-# Cafe-Order-System
+## 📸 Screenshots
+
+*You can add screenshots or screen recordings here of the menu dashboard, verification steps, etc.*
+
+---
+
+## 📌 Upcoming Features
+
+* Order placement system with table number input
+* QR code generation for each table
+* Admin dashboard to view orders in real-time
+* Payment gateway integration (e.g., Razorpay)
+* Cafe-wise authentication and multi-tenancy
+
+---
+
+## 📤 Deployment
+
+The easiest way to deploy your Next.js app is through [Vercel](https://vercel.com).
+
+Follow: [Next.js deployment docs](https://nextjs.org/docs/app/building-your-application/deploying)
+
+---
+
+## 🙋‍♀️ Author
+
+**Taniya Bansal**
+🎓 B.Sc (Hons) Computer Science & Data Analytics, IIT Patna
+💻 Passionate about full-stack development
+
+---
+
+Let me know if you'd like a Hindi version or want to add deployment instructions for backend (if you host it separately).
