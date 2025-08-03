@@ -45,7 +45,7 @@ export default function AddItemPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!item.name || !item.price) {
       return toast.error("Name and price are required");
     }
@@ -57,35 +57,35 @@ export default function AddItemPage() {
 
     try {
       const formData = new FormData();
-      formData.append('name', item.name);
-      formData.append('description', item.description);
-      formData.append('price', item.price);
-      formData.append('offer', item.offer || "0");
-      formData.append('category', item.category);
-      formData.append('type', item.type);
-      formData.append('isAvailable', item.isAvailable.toString());
-      formData.append('featured', item.featured.toString());
+      formData.append("name", item.name);
+      formData.append("description", item.description);
+      formData.append("price", item.price);
+      formData.append("offer", item.offer || "0");
+      formData.append("category", item.category);
+      formData.append("type", item.type);
+      formData.append("isAvailable", item.isAvailable.toString());
+      formData.append("featured", item.featured.toString());
 
-      item.images.forEach(file => {
-        formData.append('images', file);
+      item.images.forEach((file) => {
+        formData.append("images", file);
       });
 
-      const response = await fetch('/api/menu/add-item', {
-        method: 'POST',
-        body: formData
+      const response = await fetch("/api/menu/add-item", {
+        method: "POST",
+        body: formData,
       });
-      
+
       if (!response.ok) {
         const error = await response.json();
         throw new Error(error.message || "Failed to add item");
       }
 
       const data = await response.json();
-      toast.success('Item added successfully!', {
+      toast.success("Item added successfully!", {
         action: {
-          label: 'View Items',
-          onClick: () => router.push('/dashboard/menu')
-        }
+          label: "View Items",
+          onClick: () => router.push("/dashboard/menu"),
+        },
       });
 
       // Reset form
@@ -102,10 +102,9 @@ export default function AddItemPage() {
       });
       setPreviewImages([]);
       if (fileInputRef.current) fileInputRef.current.value = "";
-
     } catch (error) {
       toast.error(error.message);
-      console.error('Submission error:', error);
+      console.error("Submission error:", error);
     } finally {
       setLoading(false);
     }
@@ -120,26 +119,28 @@ export default function AddItemPage() {
       return toast.error(`Maximum ${maxFiles} images allowed`);
     }
 
-    const validImages = files.filter(file => file.type.startsWith("image/"));
+    const validImages = files.filter((file) => file.type.startsWith("image/"));
     if (validImages.length !== files.length) {
       toast.warning("Some files were not images and were skipped");
     }
 
     const newImages = [...item.images, ...validImages];
-    setItem(prev => ({ ...prev, images: newImages }));
+    setItem((prev) => ({ ...prev, images: newImages }));
 
-    const newPreviews = validImages.map(file => URL.createObjectURL(file));
-    setPreviewImages(prev => [...prev, ...newPreviews]);
+    const newPreviews = validImages.map((file) =>
+      URL.createObjectURL(file)
+    );
+    setPreviewImages((prev) => [...prev, ...newPreviews]);
   };
 
   const removeImage = (index) => {
-    setItem(prev => {
+    setItem((prev) => {
       const newImages = [...prev.images];
       newImages.splice(index, 1);
       return { ...prev, images: newImages };
     });
-    
-    setPreviewImages(prev => {
+
+    setPreviewImages((prev) => {
       const newPreviews = [...prev];
       URL.revokeObjectURL(newPreviews[index]);
       newPreviews.splice(index, 1);
@@ -150,7 +151,7 @@ export default function AddItemPage() {
       const dataTransfer = new DataTransfer();
       const remainingFiles = [...item.images];
       remainingFiles.splice(index, 1);
-      remainingFiles.forEach(file => dataTransfer.items.add(file));
+      remainingFiles.forEach((file) => dataTransfer.items.add(file));
       fileInputRef.current.files = dataTransfer.files;
     }
   };
@@ -163,6 +164,7 @@ export default function AddItemPage() {
 
   return (
     <SidebarProvider
+      className="min-h-screen bg-background text-foreground"
       style={{
         "--sidebar-width": "calc(var(--spacing) * 72)",
         "--header-height": "calc(var(--spacing) * 12)",
@@ -196,10 +198,8 @@ export default function AddItemPage() {
         </header>
 
         <div className="flex justify-center md:p-6">
-          <div className="w-full max-w-2xl bg-white dark:bg-gray-900 shadow-lg rounded-2xl p-8 space-y-6">
-            <h2 className="text-3xl font-bold text-gray-800 dark:text-white">
-              Add New Menu Item
-            </h2>
+          <div className="w-full max-w-2xl bg-card text-card-foreground shadow-lg rounded-2xl p-8 space-y-6 border border-border">
+            <h2 className="text-3xl font-bold">Add New Menu Item</h2>
 
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Item Name */}
@@ -272,7 +272,7 @@ export default function AddItemPage() {
                 <Label htmlFor="type">Type</Label>
                 <select
                   id="type"
-                  className="w-full border border-gray-300 dark:border-gray-700 rounded-md px-3 py-2 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-sky-500"
+                  className="w-full rounded-md border border-input bg-background text-foreground px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
                   value={item.type}
                   onChange={(e) => setItem({ ...item, type: e.target.value })}
                 >
@@ -286,11 +286,9 @@ export default function AddItemPage() {
                 <Label htmlFor="images">Images (you can select multiple)</Label>
                 <div className="flex items-center gap-2">
                   <label className="flex-1">
-                    <div className="flex items-center gap-2 border border-gray-300 dark:border-gray-700 rounded-md px-3 py-2 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">
+                    <div className="flex items-center gap-2 border border-input rounded-md px-3 py-2 bg-muted text-muted-foreground hover:bg-muted/80 cursor-pointer">
                       <span>Choose file:</span>
-                      <span className="text-sm text-gray-600 dark:text-gray-400">
-                        {getFileInputDisplay()}
-                      </span>
+                      <span className="text-sm truncate">{getFileInputDisplay()}</span>
                     </div>
                     <Input
                       id="images"
@@ -373,7 +371,7 @@ export default function AddItemPage() {
               </div>
 
               {/* Submit Button */}
-               <Button
+              <Button
                 type="submit"
                 disabled={loading}
                 className="w-full text-base gap-2"

@@ -57,7 +57,6 @@ export default function SignUpPage() {
   const [cities, setCities] = useState([]);
   const [selectedState, setSelectedState] = useState(null);
 
-  // ✅ Auto-fill state and city using pincode API
   useEffect(() => {
     const subscription = form.watch((value, { name }) => {
       const pincode = value.pincode;
@@ -117,7 +116,9 @@ export default function SignUpPage() {
 
       toast.success(res.data.message);
       router.replace(
-        `/verify?email=${encodeURIComponent(data.email)}&phone=${encodeURIComponent(formattedData.phone)}`
+        `/verify?email=${encodeURIComponent(
+          data.email
+        )}&phone=${encodeURIComponent(formattedData.phone)}`
       );
     } catch (err) {
       toast.error(err.response?.data?.message || "Signup failed");
@@ -178,13 +179,15 @@ export default function SignUpPage() {
   );
 
   return (
-    <div className="flex justify-center items-center min-h-screen bg-gray-100">
-      <div className="w-[95%] max-w-xl py-8 px-6 md:p-8 space-y-8 bg-white rounded-lg shadow-md my-2 md:my-6">
+    <div className="flex justify-center items-center min-h-screen bg-background text-foreground">
+      <div className="w-[95%] max-w-xl py-8 px-6 md:p-8 space-y-8 bg-card rounded-lg shadow-md my-2 md:my-6">
         <div className="text-center">
           <h1 className="text-4xl font-extrabold tracking-tight lg:text-5xl mb-6">
             Cafe Order System
           </h1>
-          <p className="mb-4">Sign-up to start your cafe order system</p>
+          <p className="mb-4 text-muted-foreground">
+            Sign-up to start your cafe order system
+          </p>
         </div>
 
         <Form {...form}>
@@ -234,7 +237,7 @@ export default function SignUpPage() {
               )}
             />
 
-            {/* ✅ PHONE + CAFE NAME in a row */}
+            {/* Phone + Cafe Name */}
             <div className="flex flex-col md:flex-row gap-4">
               <div className="w-full md:w-1/2">
                 <FormField
@@ -283,7 +286,7 @@ export default function SignUpPage() {
               )}
             />
 
-            {/* ✅ Pincode Input */}
+            {/* Pincode */}
             <FormField
               name="pincode"
               control={form.control}
@@ -302,7 +305,7 @@ export default function SignUpPage() {
               )}
             />
 
-            {/* ✅ STATE + CITY in a row */}
+            {/* State + City */}
             <div className="flex flex-col md:flex-row gap-4">
               <div className="w-full md:w-1/2">
                 <ComboBoxSelect
@@ -341,9 +344,9 @@ export default function SignUpPage() {
               )}
             </Button>
 
-            <p className="text-center text-sm mt-2">
+            <p className="text-center text-sm mt-2 text-muted-foreground">
               Already have an account?{" "}
-              <Link href="/sign-in" className="underline text-blue-600">
+              <Link href="/sign-in" className="underline text-primary hover:text-primary/80">
                 Sign in
               </Link>
             </p>

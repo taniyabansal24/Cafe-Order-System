@@ -36,21 +36,23 @@ export default function SignInPage() {
 
   const onSubmit = async (data) => {
     setIsSubmitting(true);
-    
+
     try {
       const result = await signIn("credentials", {
         redirect: false,
         email: data.email,
         password: data.password,
-        callbackUrl: "/dashboard" // Explicit callback URL
+        callbackUrl: "/dashboard",
       });
 
       if (result?.error) {
-        toast.error(result.error === "CredentialsSignin" 
-          ? "Invalid email or password" 
-          : result.error);
+        toast.error(
+          result.error === "CredentialsSignin"
+            ? "Invalid email or password"
+            : result.error
+        );
       } else if (result?.url) {
-        router.push(result.url); // Use push instead of replace for better UX
+        router.push(result.url);
       }
     } catch (error) {
       toast.error("An unexpected error occurred");
@@ -61,20 +63,17 @@ export default function SignInPage() {
   };
 
   return (
-    <div className="flex justify-center items-center min-h-screen bg-gray-100">
-      <div className="w-[95%] max-w-xl py-8 px-6 md:p-8 space-y-8 bg-white rounded-lg shadow-md my-2 md:my-6">
+    <div className="flex justify-center items-center min-h-screen bg-background text-foreground">
+      <div className="w-[95%] max-w-xl py-8 px-6 md:p-8 space-y-8 bg-card rounded-lg shadow-md my-2 md:my-6">
         <div className="text-center">
           <h1 className="text-4xl font-extrabold tracking-tight lg:text-5xl mb-6">
             Cafe Order System
           </h1>
-          <p className="mb-4">Sign in to continue</p>
+          <p className="mb-4 text-muted-foreground">Sign in to continue</p>
         </div>
 
         <Form {...form}>
-          <form
-            onSubmit={form.handleSubmit(onSubmit)}
-            className="space-y-4"
-          >
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             {/* Email field */}
             <FormField
               name="email"
@@ -127,11 +126,11 @@ export default function SignInPage() {
               )}
             </Button>
 
-            <p className="text-center text-sm mt-2">
+            <p className="text-center text-sm mt-2 text-muted-foreground">
               Don't have an account?{" "}
-              <Link 
-                href="/sign-up" 
-                className="underline text-blue-600 hover:text-blue-800"
+              <Link
+                href="/sign-up"
+                className="underline text-primary hover:text-primary/80"
               >
                 Sign up
               </Link>

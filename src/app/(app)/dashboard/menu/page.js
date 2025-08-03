@@ -398,7 +398,7 @@ export default function AllItemsPage() {
                     {filteredItems.map((item, index) => (
                       <tr
                         key={item._id}
-                        className="border-t border-gray-200 hover:bg-gray-50"
+                        className="border-t border-gray-200 hover:bg-gray-100 dark:hover:bg-neutral-700 dark:hover:text-white"
                       >
                         <td className="p-3">{index + 1}</td>
                         <td className="p-3 w-[70px]">
