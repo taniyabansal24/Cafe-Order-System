@@ -68,9 +68,9 @@ const staticData = {
     },
     {
       title: "QR",
-      url: "/dashboard/qr",
+      url: "/dashboard/generate-qr",
       icon: QrCode,
-      items: [{ title: "Generate QR", url: "/dashboard/qr/generate" }],
+      items: [{ title: "Generate QR", url: "dashboard/generate-qr" }],
     },
     {
       title: "Settings",
