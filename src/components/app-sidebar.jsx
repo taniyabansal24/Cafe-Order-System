@@ -70,7 +70,7 @@ const staticData = {
       title: "QR",
       url: "/dashboard/generate-qr",
       icon: QrCode,
-      items: [{ title: "Generate QR", url: "dashboard/generate-qr" }],
+      items: [{ title: "Generate QR", url: "/dashboard/generate-qr" }], // Added leading slash
     },
     {
       title: "Settings",
@@ -107,18 +107,21 @@ export function AppSidebar({ ...props }) {
   const { data: session } = useSession();
 
   // Create real user data from session with cafe-first approach
-  const realUserData = session?.user ? {
-    // Primary display shows cafe name prominently
-    cafeName: session.user.cafeName || "My Cafe",
-    // Owner name as secondary information
-    ownerName: session.user.name || "Owner",
-    // Email for contact purposes
-    email: session.user.email || "",
-    // Use cafe logo if available, otherwise fallback to user image or cafe icon
-    avatar: session.user.cafeLogo || session.user.image || "/cafe-default.png",
-    // Additional metadata (like subscription plan)
-    plan: session.user.plan || "Basic Plan"
-  } : null;
+  const realUserData = session?.user
+    ? {
+        // Primary display shows cafe name prominently
+        cafeName: session.user.cafeName || "My Cafe",
+        // Owner name as secondary information
+        ownerName: session.user.name || "Owner",
+        // Email for contact purposes
+        email: session.user.email || "",
+        // Use cafe logo if available, otherwise fallback to user image or cafe icon
+        avatar:
+          session.user.cafeLogo || session.user.image || "/cafe-default.png",
+        // Additional metadata (like subscription plan)
+        plan: session.user.plan || "Basic Plan",
+      }
+    : null;
 
   return (
     <Sidebar collapsible="icon" {...props}>
@@ -131,7 +134,7 @@ export function AppSidebar({ ...props }) {
       </SidebarContent>
       <SidebarFooter>
         {realUserData ? (
-          <NavUser 
+          <NavUser
             user={{
               // Main display shows cafe name
               name: realUserData.cafeName,
@@ -141,7 +144,7 @@ export function AppSidebar({ ...props }) {
               tertiary: realUserData.plan,
               avatar: realUserData.avatar,
               // Include email in metadata
-              email: realUserData.email
+              email: realUserData.email,
             }}
           />
         ) : (
