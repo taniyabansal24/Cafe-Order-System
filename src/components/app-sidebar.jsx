@@ -58,11 +58,11 @@ const staticData = {
     },
     {
       title: "Orders",
-      url: "/dashboard/orders",
+      url: "",
       icon: Sandwich,
       items: [
         { title: "Pending Orders", url: "/dashboard/orders/pending" },
-        { title: "All Orders", url: "/dashboard/orders" },
+        { title: "All Orders", url: "/dashboard/orders/all" },
         { title: "Completed Orders", url: "/dashboard/orders/completed" },
       ],
     },

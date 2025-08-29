@@ -8,7 +8,37 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import CloudinaryImage from "@/components/cloudinary-image";
-import { Search, Plus, Minus, ShoppingCart, ChefHat, Clock, Star, Wheat, Beef, Sparkles } from "lucide-react";
+import {
+  Search,
+  Plus,
+  Minus,
+  ShoppingCart,
+  ChefHat,
+  Clock,
+  Star,
+  Wheat,
+  Beef,
+  Sparkles,
+  CreditCard,
+  User,
+  Phone,
+  Mail,
+} from "lucide-react";
+
+// Load Razorpay script dynamically
+const loadRazorpayScript = (src) => {
+  return new Promise((resolve) => {
+    const script = document.createElement("script");
+    script.src = src;
+    script.onload = () => {
+      resolve(true);
+    };
+    script.onerror = () => {
+      resolve(false);
+    };
+    document.body.appendChild(script);
+  });
+};
 
 export default function OrderPage() {
   const [menu, setMenu] = useState([]);
@@ -20,7 +50,14 @@ export default function OrderPage() {
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [isVegFilter, setIsVegFilter] = useState(false);
-  const [cafeName, setCafeName] = useState("Delicious Bites Café"); // Default name
+  const [cafeName, setCafeName] = useState("Delicious Bites Café");
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const [customerDetails, setCustomerDetails] = useState({
+    name: "",
+    phone: "",
+    email: "",
+  });
+  const [showCustomerForm, setShowCustomerForm] = useState(false);
 
   // Define your preferred category order here
   const preferredCategoryOrder = [
@@ -33,11 +70,12 @@ export default function OrderPage() {
   ];
 
   useEffect(() => {
-    const fetchMenu = async () => {
+    const fetchMenuAndCafe = async () => {
       try {
         setIsLoading(true);
         setError(null);
 
+        // Fetch menu items
         const response = await fetch("/api/menu/my-items", {
           headers: {
             "Content-Type": "application/json",
@@ -57,41 +95,31 @@ export default function OrderPage() {
 
         setMenu(data.items);
 
-        // Extract unique categories and sort them according to preferred order
+        // Extract unique categories and sort them
         const uniqueCategories = [
           ...new Set(data.items.map((item) => item.category).filter(Boolean)),
         ];
-        
-        // Sort categories based on preferred order
+
         const sortedCategories = uniqueCategories.sort((a, b) => {
           const indexA = preferredCategoryOrder.indexOf(a);
           const indexB = preferredCategoryOrder.indexOf(b);
-          
-          // If both categories are in the preferred order, sort by that order
+
           if (indexA !== -1 && indexB !== -1) {
             return indexA - indexB;
           }
-          
-          // If only one category is in the preferred order, it comes first
           if (indexA !== -1) return -1;
           if (indexB !== -1) return 1;
-          
-          // If neither category is in the preferred order, sort alphabetically
           return a.localeCompare(b);
         });
 
         setCategories(sortedCategories);
-
-        // Set activeCategory to empty string to show all items by default
         setActiveCategory("");
 
-        // Try to get cafe name from menu data if available
-        if (data.cafeName) {
-          setCafeName(data.cafeName);
-        } else if (data.items.length > 0 && data.items[0].cafeName) {
-          setCafeName(data.items[0].cafeName);
+        // If we have items, get owner ID and fetch cafe name from owner
+        if (data.items.length > 0 && data.items[0].owner) {
+          const ownerId = data.items[0].owner;
+          await fetchCafeName(ownerId);
         }
-
       } catch (err) {
         console.error("Error fetching menu:", err);
         setError(err.message);
@@ -101,7 +129,23 @@ export default function OrderPage() {
       }
     };
 
-    fetchMenu();
+    const fetchCafeName = async (ownerId) => {
+      try {
+        const ownerResponse = await fetch(`/api/owner/${ownerId}`);
+        const ownerData = await ownerResponse.json();
+        
+        if (ownerResponse.ok && ownerData.success && ownerData.owner) {
+          setCafeName(ownerData.owner.cafeName);
+        } else {
+          console.warn("Could not fetch cafe name, using default");
+        }
+      } catch (ownerError) {
+        console.error("Error fetching owner:", ownerError);
+        // Continue with default cafe name
+      }
+    };
+
+    fetchMenuAndCafe();
   }, []);
 
   const addToCart = (item) => {
@@ -139,15 +183,229 @@ export default function OrderPage() {
     return cart.reduce((total, item) => total + item.price * item.quantity, 0);
   };
 
+  // Initialize Razorpay payment
+  // In your order page, update the initializeRazorpayPayment function:
+
+  const initializeRazorpayPayment = async () => {
+    // First, test if Razorpay is configured
+    try {
+      const testResponse = await fetch("/api/test-razorpay");
+      const testData = await testResponse.json();
+
+      if (!testData.configured) {
+        toast.error(
+          "Payment system is not configured. Please contact support."
+        );
+        return;
+      }
+    } catch (error) {
+      console.error("Razorpay config check failed:", error);
+      toast.error("Unable to verify payment configuration");
+      return;
+    }
+
+    const res = await loadRazorpayScript(
+      "https://checkout.razorpay.com/v1/checkout.js"
+    );
+
+    if (!res) {
+      toast.error("Payment gateway failed to load. Are you online?");
+      return;
+    }
+
+    // Validate customer details if form is shown
+    if (showCustomerForm) {
+      if (!customerDetails.name || !customerDetails.phone) {
+        toast.error("Please provide your name and phone number");
+        return;
+      }
+    }
+
+    // Create order on your server
+    try {
+      setIsProcessingPayment(true);
+      const orderResponse = await fetch("/api/create-razorpay-order", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          amount: calculateTotal() * 100, // Convert to paise
+          currency: "INR",
+          items: cart,
+        }),
+      });
+
+      // Check if response is JSON
+      const contentType = orderResponse.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        const text = await orderResponse.text();
+        console.error("Non-JSON response:", text);
+        throw new Error("Server returned an invalid response");
+      }
+
+      const orderData = await orderResponse.json();
+
+      if (!orderResponse.ok) {
+        throw new Error(orderData.error || "Failed to create payment order");
+      }
+
+      // Rest of your Razorpay initialization code...
+      const options = {
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+        amount: orderData.amount,
+        currency: orderData.currency,
+        name: cafeName,
+        description: "Food Order Payment",
+        order_id: orderData.id,
+        handler: async function (response) {
+          // Verify payment on server
+          try {
+            const verificationResponse = await fetch("/api/verify-payment", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+              }),
+            });
+
+            // Check if verification response is JSON
+            const verificationContentType =
+              verificationResponse.headers.get("content-type");
+            if (
+              !verificationContentType ||
+              !verificationContentType.includes("application/json")
+            ) {
+              const text = await verificationResponse.text();
+              console.error("Non-JSON verification response:", text);
+              throw new Error("Payment verification failed");
+            }
+
+            const verificationData = await verificationResponse.json();
+
+            if (verificationResponse.ok && verificationData.success) {
+              // Payment successful, create order
+              const orderResponse = await fetch("/api/orders", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  items: cart,
+                  total: calculateTotal(),
+                  paymentStatus: "completed",
+                  razorpayOrderId: verificationData.razorpayOrderId,
+                  razorpayPaymentId: verificationData.razorpayPaymentId,
+                  razorpaySignature: verificationData.razorpaySignature,
+                  customer: showCustomerForm ? customerDetails : null,
+                }),
+              });
+
+              // Check if order response is JSON
+              const orderContentType =
+                orderResponse.headers.get("content-type");
+              if (
+                !orderContentType ||
+                !orderContentType.includes("application/json")
+              ) {
+                const text = await orderResponse.text();
+                console.error("Non-JSON order response:", text);
+                throw new Error("Order creation failed");
+              }
+
+              const orderData = await orderResponse.json();
+
+              if (orderResponse.ok) {
+                setTokenNumber(orderData.tokenNumber);
+                toast.success(
+                  `Order placed! Your token number is ${orderData.tokenNumber}`
+                );
+                setCart([]);
+                setCustomerDetails({ name: "", phone: "", email: "" });
+                setShowCustomerForm(false);
+              } else {
+                throw new Error(orderData.message || "Order creation failed");
+              }
+            } else {
+              toast.error(
+                verificationData.error ||
+                  "Payment verification failed. Please contact support."
+              );
+            }
+          } catch (error) {
+            console.error("Order processing error:", error);
+            toast.error(
+              error.message ||
+                "Failed to process order. Please contact support."
+            );
+          } finally {
+            setIsProcessingPayment(false);
+          }
+        },
+        prefill: {
+          name: customerDetails.name || "Customer",
+          email: customerDetails.email || "customer@example.com",
+          contact: customerDetails.phone || "9999999999",
+        },
+        theme: {
+          color: "#F59E0B",
+        },
+        modal: {
+          ondismiss: function () {
+            setIsProcessingPayment(false);
+            toast.info("Payment cancelled");
+          },
+        },
+      };
+
+      const razorpay = new window.Razorpay(options);
+      razorpay.open();
+    } catch (error) {
+      console.error("Payment initialization error:", error);
+      toast.error(
+        error.message || "Failed to initialize payment. Please try again."
+      );
+      setIsProcessingPayment(false);
+    }
+  };
+
   const handleSubmitOrder = async () => {
     if (cart.length === 0) {
       toast.error("Your cart is empty");
       return;
     }
 
+    // Initialize Razorpay payment
+    await initializeRazorpayPayment();
+  };
+
+  // Filter menu items based on search, category, and veg filter
+  const filteredMenu = menu.filter((item) => {
+    const matchesSearch =
+      item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.description.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesCategory = activeCategory
+      ? item.category === activeCategory
+      : true;
+
+    // Use the type property for filtering (Veg/Non-Veg)
+    const matchesVegFilter = isVegFilter ? item.type === "Veg" : true;
+
+    return matchesSearch && matchesCategory && matchesVegFilter;
+  });
+
+  // Add this function to your order page
+  const handleCashPayment = async () => {
     try {
-      setIsLoading(true);
-      const response = await fetch("/api/orders", {
+      setIsProcessingPayment(true);
+
+      // Create order with cash payment
+      // For Razorpay payments:
+      const orderResponse = await fetch("/api/orders", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -155,44 +413,48 @@ export default function OrderPage() {
         body: JSON.stringify({
           items: cart,
           total: calculateTotal(),
+          paymentStatus: "completed",
+          paymentMethod: "razorpay", // Add this
+          razorpayOrderId: verificationData.razorpayOrderId,
+          razorpayPaymentId: verificationData.razorpayPaymentId,
+          razorpaySignature: verificationData.razorpaySignature,
+          customer: showCustomerForm ? customerDetails : null,
         }),
       });
 
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.message || "Order failed");
+      const orderData = await orderResponse.json();
 
-      setTokenNumber(data.tokenNumber);
-      toast.success(`Order placed! Your token number is ${data.tokenNumber}`);
-      setCart([]);
+      if (orderResponse.ok) {
+        setTokenNumber(orderData.tokenNumber);
+        toast.success(
+          `Order placed! Your token number is ${orderData.tokenNumber}. Please pay at the counter.`
+        );
+        setCart([]);
+        setCustomerDetails({ name: "", phone: "", email: "" });
+        setShowCustomerForm(false);
+      } else {
+        throw new Error(orderData.message || "Order creation failed");
+      }
     } catch (error) {
-      toast.error(error.message);
+      console.error("Cash order error:", error);
+      toast.error(error.message || "Failed to place order. Please try again.");
     } finally {
-      setIsLoading(false);
+      setIsProcessingPayment(false);
     }
   };
-
-  // Filter menu items based on search, category, and veg filter
-  const filteredMenu = menu.filter(item => {
-    const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          item.description.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = activeCategory ? item.category === activeCategory : true;
-    
-    // Use the type property for filtering (Veg/Non-Veg)
-    const matchesVegFilter = isVegFilter ? item.type === "Veg" : true;
-    
-    return matchesSearch && matchesCategory && matchesVegFilter;
-  });
 
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-gradient-to-br from-amber-50 via-orange-50 to-amber-100">
         <Card className="w-full max-w-md border-0 shadow-xl bg-white/90 backdrop-blur-sm">
           <CardContent className="pt-6 text-center space-y-4">
-            <h1 className="text-2xl font-bold text-amber-900">Error Loading Menu</h1>
+            <h1 className="text-2xl font-bold text-amber-900">
+              Error Loading Menu
+            </h1>
             <p className="text-red-500">{error}</p>
-            <Button 
-              onClick={() => window.location.reload()} 
-              variant="outline" 
+            <Button
+              onClick={() => window.location.reload()}
+              variant="outline"
               className="bg-amber-100 border-amber-300 text-amber-800 hover:bg-amber-200"
             >
               Try Again
@@ -207,7 +469,9 @@ export default function OrderPage() {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-amber-100">
         <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-amber-600 mb-4"></div>
-        <p className="text-amber-800 font-medium">Loading our delicious menu...</p>
+        <p className="text-amber-800 font-medium">
+          Loading our delicious menu...
+        </p>
       </div>
     );
   }
@@ -221,20 +485,26 @@ export default function OrderPage() {
               <ChefHat className="h-8 w-8 text-white" />
             </div>
             <h1 className="text-2xl font-bold">Order Confirmed!</h1>
-            <p className="mt-2 text-amber-100">Your delicious food is being prepared</p>
+            <p className="mt-2 text-amber-100">
+              Your delicious food is being prepared
+            </p>
           </div>
           <CardContent className="p-6 text-center space-y-4">
             <div className="text-5xl font-bold text-amber-600 my-6 bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent">
               #{tokenNumber}
             </div>
-            <p className="text-gray-600">Please wait for your token number to be called</p>
-            <p className="text-gray-600">You can show this number to collect your order</p>
+            <p className="text-gray-600">
+              Please wait for your token number to be called
+            </p>
+            <p className="text-gray-600">
+              You can show this number to collect your order
+            </p>
             <div className="flex items-center justify-center mt-4 text-sm text-gray-500">
               <Clock className="h-4 w-4 mr-1" />
               <span>Estimated wait time: 15-20 minutes</span>
             </div>
-            <Button 
-              onClick={() => setTokenNumber(null)} 
+            <Button
+              onClick={() => setTokenNumber(null)}
               className="w-full mt-6 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white"
             >
               Place New Order
@@ -272,21 +542,24 @@ export default function OrderPage() {
               className="pl-10 bg-white border-amber-300 focus:border-amber-500"
             />
           </div>
-          
+
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
-              <Switch 
-                id="veg-filter" 
+              <Switch
+                id="veg-filter"
                 checked={isVegFilter}
                 onCheckedChange={setIsVegFilter}
                 className="data-[state=checked]:bg-green-500 data-[state=unchecked]:bg-gray-300"
               />
-              <Label htmlFor="veg-filter" className="text-sm text-amber-800 flex items-center">
+              <Label
+                htmlFor="veg-filter"
+                className="text-sm text-amber-800 flex items-center"
+              >
                 <Wheat className="h-4 w-4 mr-1 text-green-600" />
                 Veg Only
               </Label>
             </div>
-            
+
             <div className="text-xs text-amber-700 flex items-center">
               <Beef className="h-3 w-3 mr-1 text-red-500" />
               Non-Veg
@@ -331,19 +604,27 @@ export default function OrderPage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {filteredMenu.map((item) => (
-              <Card key={item._id} className="overflow-hidden border-amber-200 bg-white/90 backdrop-blur-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-1 px-4">
+              <Card
+                key={item._id}
+                className="overflow-hidden border-amber-200 bg-white/90 backdrop-blur-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-1 px-4"
+              >
                 <div className="flex">
                   <div className="w-28 h-28 relative flex-shrink-0">
                     <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent z-10"></div>
                     <CloudinaryImage
-                      src={item.images?.[0] || "https://res.cloudinary.com/dreeyzl13/image/upload/v1753902411/cafe-items/vmwtbgdybuxkfzfpcppb.jpg"}
+                      src={
+                        item.images?.[0] ||
+                        "https://res.cloudinary.com/dreeyzl13/image/upload/v1753902411/cafe-items/vmwtbgdybuxkfzfpcppb.jpg"
+                      }
                       alt={item.name}
                       width={300}
                       height={200}
                       className="w-full h-full object-cover"
                     />
                     {/* Use item.type instead of item.isVeg */}
-                    <div className={`absolute top-2 left-2 w-5 h-5 rounded-full flex items-center justify-center ${item.type === "Veg" ? 'bg-green-500' : 'bg-red-500'} z-20 shadow-md`}>
+                    <div
+                      className={`absolute top-2 left-2 w-5 h-5 rounded-full flex items-center justify-center ${item.type === "Veg" ? "bg-green-500" : "bg-red-500"} z-20 shadow-md`}
+                    >
                       <div className="w-2 h-2 rounded-full bg-white"></div>
                     </div>
                     {item.category && (
@@ -354,8 +635,12 @@ export default function OrderPage() {
                   </div>
                   <div className="flex-1 p-3">
                     <div className="flex justify-between items-start">
-                      <h3 className="font-semibold text-amber-900">{item.name}</h3>
-                      <span className="font-bold text-amber-700">₹{item.price}</span>
+                      <h3 className="font-semibold text-amber-900">
+                        {item.name}
+                      </h3>
+                      <span className="font-bold text-amber-700">
+                        ₹{item.price}
+                      </span>
                     </div>
                     <p className="text-sm text-gray-600 mt-1 line-clamp-2">
                       {item.description}
@@ -363,12 +648,14 @@ export default function OrderPage() {
                     {item.popular && (
                       <div className="flex items-center mt-2">
                         <Star className="h-3 w-3 fill-amber-500 text-amber-500" />
-                        <span className="text-xs text-amber-600 ml-1">Popular</span>
+                        <span className="text-xs text-amber-600 ml-1">
+                          Popular
+                        </span>
                       </div>
                     )}
                     <div className="flex justify-end mt-3">
-                      <Button 
-                        size="sm" 
+                      <Button
+                        size="sm"
                         onClick={() => addToCart(item)}
                         className="bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white"
                       >
@@ -383,18 +670,85 @@ export default function OrderPage() {
         )}
       </div>
 
-      {/* Cart Drawer */}
       {cart.length > 0 && (
         <div className="fixed bottom-0 left-0 right-0 bg-white shadow-xl border-t border-amber-200 rounded-t-2xl p-4 z-30">
           <div className="container mx-auto">
             <div className="flex items-center justify-between mb-2">
               <h3 className="font-bold text-lg text-amber-900 flex items-center">
                 <ShoppingCart className="h-5 w-5 mr-2" />
-                Your Order ({cart.length} {cart.length === 1 ? 'item' : 'items'})
+                Your Order ({cart.length} {cart.length === 1 ? "item" : "items"}
+                )
               </h3>
-              <span className="font-bold text-amber-700">₹{calculateTotal()}</span>
+              <span className="font-bold text-amber-700">
+                ₹{calculateTotal()}
+              </span>
             </div>
-            
+
+            {/* Customer Details Form */}
+            {showCustomerForm && (
+              <div className="mb-4 p-3 bg-amber-50 rounded-lg border border-amber-200">
+                <h4 className="font-medium mb-2 flex items-center">
+                  <User className="h-4 w-4 mr-1" />
+                  Customer Details
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                  <div>
+                    <Label htmlFor="name" className="text-xs">
+                      Name *
+                    </Label>
+                    <Input
+                      id="name"
+                      value={customerDetails.name}
+                      onChange={(e) =>
+                        setCustomerDetails({
+                          ...customerDetails,
+                          name: e.target.value,
+                        })
+                      }
+                      placeholder="Your name"
+                      className="h-8 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="phone" className="text-xs">
+                      Phone *
+                    </Label>
+                    <Input
+                      id="phone"
+                      type="tel"
+                      value={customerDetails.phone}
+                      onChange={(e) =>
+                        setCustomerDetails({
+                          ...customerDetails,
+                          phone: e.target.value,
+                        })
+                      }
+                      placeholder="Phone number"
+                      className="h-8 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="email" className="text-xs">
+                      Email
+                    </Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={customerDetails.email}
+                      onChange={(e) =>
+                        setCustomerDetails({
+                          ...customerDetails,
+                          email: e.target.value,
+                        })
+                      }
+                      placeholder="Email (optional)"
+                      className="h-8 text-sm"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div className="max-h-48 overflow-y-auto mb-4">
               {cart.map((item) => (
                 <div
@@ -404,7 +758,9 @@ export default function OrderPage() {
                   <div className="flex-1">
                     <div className="flex items-center">
                       {/* Use item.type instead of item.isVeg */}
-                      <div className={`w-3 h-3 rounded-full mr-2 flex items-center justify-center ${item.type === "Veg" ? 'bg-green-500' : 'bg-red-500'}`}>
+                      <div
+                        className={`w-3 h-3 rounded-full mr-2 flex items-center justify-center ${item.type === "Veg" ? "bg-green-500" : "bg-red-500"}`}
+                      >
                         <div className="w-1 h-1 rounded-full bg-white"></div>
                       </div>
                       <p className="font-medium text-amber-900">{item.name}</p>
@@ -418,16 +774,22 @@ export default function OrderPage() {
                       size="sm"
                       variant="outline"
                       className="h-8 w-8 p-0 rounded-full border-amber-300 text-amber-700 hover:bg-amber-50"
-                      onClick={() => updateQuantity(item._id, item.quantity - 1)}
+                      onClick={() =>
+                        updateQuantity(item._id, item.quantity - 1)
+                      }
                     >
                       <Minus className="h-4 w-4" />
                     </Button>
-                    <span className="w-6 text-center font-medium">{item.quantity}</span>
+                    <span className="w-6 text-center font-medium">
+                      {item.quantity}
+                    </span>
                     <Button
                       size="sm"
                       variant="outline"
                       className="h-8 w-8 p-0 rounded-full border-amber-300 text-amber-700 hover:bg-amber-50"
-                      onClick={() => updateQuantity(item._id, item.quantity + 1)}
+                      onClick={() =>
+                        updateQuantity(item._id, item.quantity + 1)
+                      }
                     >
                       <Plus className="h-4 w-4" />
                     </Button>
@@ -435,21 +797,44 @@ export default function OrderPage() {
                 </div>
               ))}
             </div>
-            
-            <Button
-              className="w-full bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 py-3 text-lg font-semibold rounded-xl text-white"
-              onClick={handleSubmitOrder}
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  Placing Order...
-                </>
-              ) : (
-                `Place Order - ₹${calculateTotal()}`
-              )}
-            </Button>
+
+            <div className="flex flex-col space-y-3">
+              <Button
+                variant="outline"
+                onClick={() => setShowCustomerForm(!showCustomerForm)}
+                className="flex items-center justify-center py-2"
+              >
+                {showCustomerForm ? (
+                  <>
+                    <User className="h-4 w-4 mr-2" />
+                    Hide Customer Details
+                  </>
+                ) : (
+                  <>
+                    <User className="h-4 w-4 mr-2" />
+                    Add Customer Details
+                  </>
+                )}
+              </Button>
+
+              <Button
+                className="w-full bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 py-3 text-lg font-semibold rounded-xl text-white flex items-center justify-center"
+                onClick={handleSubmitOrder}
+                disabled={isProcessingPayment}
+              >
+                {isProcessingPayment ? (
+                  <>
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                    Processing Payment...
+                  </>
+                ) : (
+                  <>
+                    <CreditCard className="h-5 w-5 mr-2" />
+                    Pay ₹{calculateTotal()}
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
         </div>
       )}
