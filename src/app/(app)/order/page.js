@@ -384,19 +384,23 @@ export default function OrderPage() {
   };
 
   // Filter menu items based on search, category, and veg filter
-  const filteredMenu = menu.filter((item) => {
-    const matchesSearch =
-      item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.description.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = activeCategory
-      ? item.category === activeCategory
-      : true;
+ // Filter menu items based on search, category, veg filter, and availability
+const filteredMenu = menu.filter((item) => {
+  // Skip items that are not available
+  if (!item.isAvailable) return false;
 
-    // Use the type property for filtering (Veg/Non-Veg)
-    const matchesVegFilter = isVegFilter ? item.type === "Veg" : true;
+  const matchesSearch =
+    item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    item.description.toLowerCase().includes(searchQuery.toLowerCase());
+  const matchesCategory = activeCategory
+    ? item.category === activeCategory
+    : true;
 
-    return matchesSearch && matchesCategory && matchesVegFilter;
-  });
+  // Use the type property for filtering (Veg/Non-Veg)
+  const matchesVegFilter = isVegFilter ? item.type === "Veg" : true;
+
+  return matchesSearch && matchesCategory && matchesVegFilter;
+});
 
   // Add this function to your order page
   const handleCashPayment = async () => {
