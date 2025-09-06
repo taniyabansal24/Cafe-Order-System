@@ -38,8 +38,11 @@ export default function GenerateQrPage() {
 
     setLoading(true);
     try {
-      const url = `${window.location.origin}/menu/${ownerId}`;
-      const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${url}`;
+      // Point to your order page
+      const url = `${window.location.origin}/order`;
+      
+      // Generate QR code with the order page URL
+      const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(url)}`;
 
       await axios.post("/api/qr/save", {
         ownerId,
@@ -48,6 +51,7 @@ export default function GenerateQrPage() {
 
       setQrUrl(qrCodeUrl);
       toast.success("QR code generated and saved!");
+      toast.info("When scanned, this QR will open your order menu page");
     } catch (error) {
       console.error("QR Generation Error:", error);
       toast.error("Failed to generate QR code.");
@@ -58,6 +62,8 @@ export default function GenerateQrPage() {
 
   // Proper download handler
   const downloadQR = async () => {
+    if (!qrUrl) return;
+    
     try {
       // Fetch the QR code image as a blob
       const response = await fetch(qrUrl);
@@ -67,36 +73,52 @@ export default function GenerateQrPage() {
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `menu-qr-${ownerId}.png`;
+      link.download = `cafe-menu-qr.png`;
       document.body.appendChild(link);
       link.click();
       
       // Clean up
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
+      toast.success("QR code downloaded!");
     } catch (error) {
       console.error("Download failed:", error);
       toast.error("Failed to download QR code");
     }
   };
 
-  if (status === "loading") return <div>Loading...</div>;
+  if (status === "loading") return <div className="text-foreground">Loading...</div>;
 
   return (
-    <div className="max-w-md mx-auto mt-10">
-      <Card className="p-6 shadow-lg">
+    <div className="max-w-md mx-auto mt-10 p-4 lg:flex flex-row justify-between lg:max-w-max lg:gap-8">
+      {/* QR Code Card */}
+      <Card className="p-6 shadow-lg bg-card border-border">
         <CardContent className="flex flex-col items-center gap-6">
-          <h2 className="text-xl font-bold">QR Code for Your Menu</h2>
+          <h2 className="text-xl font-bold text-center text-foreground">
+            QR Code for Your Menu
+          </h2>
+          <p className="text-sm text-muted-foreground text-center">
+            Generate a QR code that customers can scan to view your menu and place orders
+          </p>
 
           {qrUrl ? (
             <div className="flex flex-col items-center gap-4 mt-6">
               <img
                 src={qrUrl}
-                alt="Generated QR"
-                className="w-56 h-56 rounded-xl shadow-md border"
+                alt="Menu QR Code"
+                className="w-56 h-56 rounded-xl shadow-md border border-border"
               />
+              
+              <div className="text-center">
+                <p className="text-sm text-green-600 dark:text-green-400 mb-2">
+                  ✓ QR code points to: <strong className="text-foreground">{window.location.origin}/order</strong>
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Scan this code to test your menu page
+                </p>
+              </div>
 
-              <div className="flex gap-4">
+              <div className="flex gap-4 flex-wrap justify-center">
                 <Button onClick={generateQr} disabled={loading}>
                   {loading ? "Regenerating..." : "Regenerate QR"}
                 </Button>
@@ -106,10 +128,34 @@ export default function GenerateQrPage() {
               </div>
             </div>
           ) : (
-            <Button onClick={generateQr} disabled={loading}>
-              {loading ? "Generating..." : "Generate QR"}
-            </Button>
+            <div className="text-center">
+              <Button onClick={generateQr} disabled={loading} className="mb-4">
+                {loading ? "Generating..." : "Generate QR Code"}
+              </Button>
+              <p className="text-sm text-muted-foreground">
+                This will create a QR code that opens your order menu page
+              </p>
+            </div>
           )}
+        </CardContent>
+      </Card>
+
+      {/* Instructions section */}
+      <Card className="mt-6 p-6 bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800 md:max-h-max">
+        <CardContent>
+          <h3 className="font-semibold text-blue-900 dark:text-blue-200 mb-3">
+            How to Use:
+          </h3>
+          <ul className="text-sm text-blue-800 dark:text-blue-300 space-y-2">
+            <li>• Generate the QR code</li>
+            <li>• Download and print it</li>
+            <li>• Place it on tables or at the entrance</li>
+            <li>• Customers scan it to view your menu</li>
+            <li>• They can order directly from their phones</li>
+          </ul>
+          <p className="text-xs text-blue-600 dark:text-blue-400 mt-3">
+            Note: The QR code will work fully once your site is deployed to production
+          </p>
         </CardContent>
       </Card>
     </div>

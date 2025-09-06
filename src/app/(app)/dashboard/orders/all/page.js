@@ -111,9 +111,10 @@ export default function AllOrdersPage() {
     const config = statusConfig[status] || statusConfig.pending;
 
     return (
-      <Badge variant={config.variant} className="flex items-center">
+      <Badge variant={config.variant} className="flex items-center text-xs">
         {config.icon}
-        {status.charAt(0).toUpperCase() + status.slice(1)}
+        <span className="hidden sm:inline">{status.charAt(0).toUpperCase() + status.slice(1)}</span>
+        <span className="sm:hidden">{status.charAt(0).toUpperCase()}</span>
       </Badge>
     );
   };
@@ -159,10 +160,10 @@ export default function AllOrdersPage() {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto p-6 space-y-6">
+      <div className="container mx-auto p-4 md:p-6 space-y-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">All Orders</h1>
+            <h1 className="text-2xl md:text-3xl font-bold text-foreground">All Orders</h1>
             <p className="text-muted-foreground">View and manage all orders</p>
           </div>
           <Skeleton className="h-10 w-24" />
@@ -171,7 +172,7 @@ export default function AllOrdersPage() {
         <div className="space-y-2">
           {[1, 2, 3, 4, 5].map((i) => (
             <Card key={i} className="p-4">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap items-center justify-between gap-2">
                 <Skeleton className="h-5 w-32" />
                 <Skeleton className="h-5 w-20" />
                 <Skeleton className="h-5 w-16" />
@@ -186,17 +187,17 @@ export default function AllOrdersPage() {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="container mx-auto p-4 md:p-6 space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">All Orders</h1>
+          <h1 className="text-2xl md:text-3xl font-bold text-foreground">All Orders</h1>
           <p className="text-muted-foreground">View and manage all orders</p>
         </div>
         <Button 
           onClick={fetchAllOrders}
           variant="outline"
-          className="flex items-center"
+          className="flex items-center w-full sm:w-auto justify-center"
           disabled={refreshing}
         >
           <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
@@ -219,7 +220,7 @@ export default function AllOrdersPage() {
           <Button
             variant="outline"
             onClick={() => setShowFilters(!showFilters)}
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 w-full sm:w-auto justify-center"
           >
             <Filter className="h-4 w-4" />
             Filters
@@ -269,13 +270,13 @@ export default function AllOrdersPage() {
           <CardContent className="flex flex-col items-center justify-center py-12">
             <div className="h-16 w-16 text-muted-foreground mb-4">📦</div>
             <h3 className="text-lg font-medium text-foreground mb-2">No orders yet</h3>
-            <p className="text-muted-foreground">Orders will appear here when customers place them</p>
+            <p className="text-muted-foreground text-center">Orders will appear here when customers place them</p>
           </CardContent>
         </Card>
       ) : (
         <div className="space-y-2">
-          {/* Table Header */}
-          <div className="grid grid-cols-12 gap-4 px-4 py-2 bg-muted rounded-lg font-medium text-sm text-muted-foreground">
+          {/* Table Header - Hidden on mobile */}
+          <div className="hidden md:grid grid-cols-12 gap-4 px-4 py-2 bg-muted rounded-lg font-medium text-sm text-muted-foreground">
             <div className="col-span-2">Order #</div>
             <div className="col-span-2">Customer</div>
             <div className="col-span-2">Items</div>
@@ -288,15 +289,15 @@ export default function AllOrdersPage() {
           {/* Orders List */}
           {filteredOrders.map((order) => (
             <Card key={order._id} className="overflow-hidden">
-              <div className="grid grid-cols-12 gap-4 items-center p-4 cursor-pointer" onClick={() => toggleExpand(order._id)}>
-                <div className="col-span-2 font-semibold">
+              <div className="grid grid-cols-12 gap-2 md:gap-4 items-center p-3 md:p-4 cursor-pointer" onClick={() => toggleExpand(order._id)}>
+                <div className="col-span-6 md:col-span-2 font-semibold">
                   <div className={`flex items-center ${getTokenNumberColor(order.status)}`}>
                     <Receipt className="h-4 w-4 mr-1" />
-                    #{order.tokenNumber}
+                    <span className="truncate">#{order.tokenNumber}</span>
                   </div>
                 </div>
                 
-                <div className="col-span-2">
+                <div className="hidden md:block col-span-2">
                   {order.customerName ? (
                     <div className="flex items-center">
                       <User className="h-4 w-4 mr-2 text-muted-foreground" />
@@ -307,26 +308,30 @@ export default function AllOrdersPage() {
                   )}
                 </div>
                 
-                <div className="col-span-2 text-sm">
+                <div className="hidden md:block col-span-2 text-sm">
                   {order.items.length} item{order.items.length !== 1 ? 's' : ''}
                 </div>
                 
-                <div className="col-span-2 font-semibold">
+                <div className="col-span-3 md:col-span-2 font-semibold text-sm md:text-base">
                   ₹{order.total}
                 </div>
                 
-                <div className="col-span-2">
+                <div className="col-span-3 md:col-span-2">
                   {getStatusBadge(order.status)}
                 </div>
                 
-                <div className="col-span-1 text-sm text-muted-foreground">
+                <div className="hidden md:block col-span-1 text-sm text-muted-foreground">
                   {getTimeElapsed(order.createdAt)}
                 </div>
                 
-                <div className="col-span-1 flex justify-end">
+                <div className="col-span-3 md:col-span-1 flex justify-end">
+                  <div className="md:hidden text-xs text-muted-foreground mr-2">
+                    {getTimeElapsed(order.createdAt)}
+                  </div>
                   <Button
                     variant="ghost"
                     size="icon"
+                    className="h-8 w-8"
                     onClick={(e) => {
                       e.stopPropagation();
                       toggleExpand(order._id);
@@ -338,6 +343,19 @@ export default function AllOrdersPage() {
                       <ChevronDown className="h-4 w-4" />
                     )}
                   </Button>
+                </div>
+              </div>
+
+              {/* Mobile customer info */}
+              <div className="md:hidden px-4 pb-2">
+                {order.customerName && (
+                  <div className="flex items-center text-sm text-muted-foreground">
+                    <User className="h-3 w-3 mr-1" />
+                    <span className="truncate">{order.customerName}</span>
+                  </div>
+                )}
+                <div className="text-sm text-muted-foreground">
+                  {order.items.length} item{order.items.length !== 1 ? 's' : ''}
                 </div>
               </div>
 

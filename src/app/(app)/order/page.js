@@ -57,7 +57,10 @@ export default function OrderPage() {
     phone: "",
     email: "",
   });
-  const [showCustomerForm, setShowCustomerForm] = useState(false);
+  const [customerDetailsError, setCustomerDetailsError] = useState({
+    name: "",
+    phone: "",
+  });
 
   // Define your preferred category order here
   const preferredCategoryOrder = [
@@ -183,9 +186,33 @@ export default function OrderPage() {
     return cart.reduce((total, item) => total + item.price * item.quantity, 0);
   };
 
-  // Initialize Razorpay payment
-  // In your order page, update the initializeRazorpayPayment function:
+  // Validate customer details
+  const validateCustomerDetails = () => {
+    const errors = {
+      name: "",
+      phone: "",
+    };
+    
+    let isValid = true;
+    
+    if (!customerDetails.name.trim()) {
+      errors.name = "Name is required";
+      isValid = false;
+    }
+    
+    if (!customerDetails.phone.trim()) {
+      errors.phone = "Phone number is required";
+      isValid = false;
+    } else if (!/^\d{10}$/.test(customerDetails.phone.trim())) {
+      errors.phone = "Please enter a valid 10-digit phone number";
+      isValid = false;
+    }
+    
+    setCustomerDetailsError(errors);
+    return isValid;
+  };
 
+  // Initialize Razorpay payment
   const initializeRazorpayPayment = async () => {
     // First, test if Razorpay is configured
     try {
@@ -204,6 +231,12 @@ export default function OrderPage() {
       return;
     }
 
+    // Validate customer details
+    if (!validateCustomerDetails()) {
+      toast.error("Please fix the errors in customer details");
+      return;
+    }
+
     const res = await loadRazorpayScript(
       "https://checkout.razorpay.com/v1/checkout.js"
     );
@@ -211,14 +244,6 @@ export default function OrderPage() {
     if (!res) {
       toast.error("Payment gateway failed to load. Are you online?");
       return;
-    }
-
-    // Validate customer details if form is shown
-    if (showCustomerForm) {
-      if (!customerDetails.name || !customerDetails.phone) {
-        toast.error("Please provide your name and phone number");
-        return;
-      }
     }
 
     // Create order on your server
@@ -301,7 +326,7 @@ export default function OrderPage() {
                   razorpayOrderId: verificationData.razorpayOrderId,
                   razorpayPaymentId: verificationData.razorpayPaymentId,
                   razorpaySignature: verificationData.razorpaySignature,
-                  customer: showCustomerForm ? customerDetails : null,
+                  customer: customerDetails,
                 }),
               });
 
@@ -326,7 +351,7 @@ export default function OrderPage() {
                 );
                 setCart([]);
                 setCustomerDetails({ name: "", phone: "", email: "" });
-                setShowCustomerForm(false);
+                setCustomerDetailsError({ name: "", phone: "" });
               } else {
                 throw new Error(orderData.message || "Order creation failed");
               }
@@ -384,31 +409,36 @@ export default function OrderPage() {
   };
 
   // Filter menu items based on search, category, and veg filter
- // Filter menu items based on search, category, veg filter, and availability
-const filteredMenu = menu.filter((item) => {
-  // Skip items that are not available
-  if (!item.isAvailable) return false;
+  const filteredMenu = menu.filter((item) => {
+    // Skip items that are not available
+    if (!item.isAvailable) return false;
 
-  const matchesSearch =
-    item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    item.description.toLowerCase().includes(searchQuery.toLowerCase());
-  const matchesCategory = activeCategory
-    ? item.category === activeCategory
-    : true;
+    const matchesSearch =
+      item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.description.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesCategory = activeCategory
+      ? item.category === activeCategory
+      : true;
 
-  // Use the type property for filtering (Veg/Non-Veg)
-  const matchesVegFilter = isVegFilter ? item.type === "Veg" : true;
+    // Use the type property for filtering (Veg/Non-Veg)
+    const matchesVegFilter = isVegFilter ? item.type === "Veg" : true;
 
-  return matchesSearch && matchesCategory && matchesVegFilter;
-});
+    return matchesSearch && matchesCategory && matchesVegFilter;
+  });
 
-  // Add this function to your order page
+  // Handle cash payment
   const handleCashPayment = async () => {
     try {
       setIsProcessingPayment(true);
 
+      // Validate customer details
+      if (!validateCustomerDetails()) {
+        toast.error("Please fix the errors in customer details");
+        setIsProcessingPayment(false);
+        return;
+      }
+
       // Create order with cash payment
-      // For Razorpay payments:
       const orderResponse = await fetch("/api/orders", {
         method: "POST",
         headers: {
@@ -417,12 +447,9 @@ const filteredMenu = menu.filter((item) => {
         body: JSON.stringify({
           items: cart,
           total: calculateTotal(),
-          paymentStatus: "completed",
-          paymentMethod: "razorpay", // Add this
-          razorpayOrderId: verificationData.razorpayOrderId,
-          razorpayPaymentId: verificationData.razorpayPaymentId,
-          razorpaySignature: verificationData.razorpaySignature,
-          customer: showCustomerForm ? customerDetails : null,
+          paymentStatus: "pending",
+          paymentMethod: "cash",
+          customer: customerDetails,
         }),
       });
 
@@ -435,7 +462,7 @@ const filteredMenu = menu.filter((item) => {
         );
         setCart([]);
         setCustomerDetails({ name: "", phone: "", email: "" });
-        setShowCustomerForm(false);
+        setCustomerDetailsError({ name: "", phone: "" });
       } else {
         throw new Error(orderData.message || "Order creation failed");
       }
@@ -688,70 +715,92 @@ const filteredMenu = menu.filter((item) => {
               </span>
             </div>
 
-            {/* Customer Details Form */}
-            {showCustomerForm && (
-              <div className="mb-4 p-3 bg-amber-50 rounded-lg border border-amber-200">
-                <h4 className="font-medium mb-2 flex items-center">
-                  <User className="h-4 w-4 mr-1" />
-                  Customer Details
-                </h4>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                  <div>
-                    <Label htmlFor="name" className="text-xs">
-                      Name *
-                    </Label>
-                    <Input
-                      id="name"
-                      value={customerDetails.name}
-                      onChange={(e) =>
-                        setCustomerDetails({
-                          ...customerDetails,
-                          name: e.target.value,
-                        })
+            {/* Customer Details Form - Always shown and required */}
+            <div className="mb-4 p-3 bg-amber-50 rounded-lg border border-amber-200">
+              <h4 className="font-medium mb-2 flex items-center">
+                <User className="h-4 w-4 mr-1" />
+                Customer Details *
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                <div>
+                  <Label htmlFor="name" className="text-xs">
+                    Name *
+                  </Label>
+                  <Input
+                    id="name"
+                    value={customerDetails.name}
+                    onChange={(e) => {
+                      setCustomerDetails({
+                        ...customerDetails,
+                        name: e.target.value,
+                      });
+                      // Clear error when user starts typing
+                      if (customerDetailsError.name) {
+                        setCustomerDetailsError({
+                          ...customerDetailsError,
+                          name: "",
+                        });
                       }
-                      placeholder="Your name"
-                      className="h-8 text-sm"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="phone" className="text-xs">
-                      Phone *
-                    </Label>
-                    <Input
-                      id="phone"
-                      type="tel"
-                      value={customerDetails.phone}
-                      onChange={(e) =>
-                        setCustomerDetails({
-                          ...customerDetails,
-                          phone: e.target.value,
-                        })
+                    }}
+                    placeholder="Your name"
+                    className={`h-8 text-sm ${customerDetailsError.name ? "border-red-500" : ""}`}
+                  />
+                  {customerDetailsError.name && (
+                    <p className="text-xs text-red-500 mt-1">
+                      {customerDetailsError.name}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <Label htmlFor="phone" className="text-xs">
+                    Phone *
+                  </Label>
+                  <Input
+                    id="phone"
+                    type="tel"
+                    value={customerDetails.phone}
+                    onChange={(e) => {
+                      setCustomerDetails({
+                        ...customerDetails,
+                        phone: e.target.value,
+                      });
+                      // Clear error when user starts typing
+                      if (customerDetailsError.phone) {
+                        setCustomerDetailsError({
+                          ...customerDetailsError,
+                          phone: "",
+                        });
                       }
-                      placeholder="Phone number"
-                      className="h-8 text-sm"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="email" className="text-xs">
-                      Email
-                    </Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={customerDetails.email}
-                      onChange={(e) =>
-                        setCustomerDetails({
-                          ...customerDetails,
-                          email: e.target.value,
-                        })
-                      }
-                      placeholder="Email (optional)"
-                      className="h-8 text-sm"
-                    />
-                  </div>
+                    }}
+                    placeholder="Phone number"
+                    className={`h-8 text-sm ${customerDetailsError.phone ? "border-red-500" : ""}`}
+                  />
+                  {customerDetailsError.phone && (
+                    <p className="text-xs text-red-500 mt-1">
+                      {customerDetailsError.phone}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <Label htmlFor="email" className="text-xs">
+                    Email (Optional)
+                  </Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={customerDetails.email}
+                    onChange={(e) =>
+                      setCustomerDetails({
+                        ...customerDetails,
+                        email: e.target.value,
+                      })
+                    }
+                    placeholder="Email (optional)"
+                    className="h-8 text-sm"
+                  />
                 </div>
               </div>
-            )}
+            </div>
 
             <div className="max-h-48 overflow-y-auto mb-4">
               {cart.map((item) => (
@@ -804,24 +853,6 @@ const filteredMenu = menu.filter((item) => {
 
             <div className="flex flex-col space-y-3">
               <Button
-                variant="outline"
-                onClick={() => setShowCustomerForm(!showCustomerForm)}
-                className="flex items-center justify-center py-2"
-              >
-                {showCustomerForm ? (
-                  <>
-                    <User className="h-4 w-4 mr-2" />
-                    Hide Customer Details
-                  </>
-                ) : (
-                  <>
-                    <User className="h-4 w-4 mr-2" />
-                    Add Customer Details
-                  </>
-                )}
-              </Button>
-
-              <Button
                 className="w-full bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 py-3 text-lg font-semibold rounded-xl text-white flex items-center justify-center"
                 onClick={handleSubmitOrder}
                 disabled={isProcessingPayment}
@@ -837,6 +868,15 @@ const filteredMenu = menu.filter((item) => {
                     Pay ₹{calculateTotal()}
                   </>
                 )}
+              </Button>
+              
+              <Button
+                variant="outline"
+                onClick={handleCashPayment}
+                disabled={isProcessingPayment}
+                className="py-3 text-lg font-semibold rounded-xl"
+              >
+                Pay with Cash at Counter
               </Button>
             </div>
           </div>

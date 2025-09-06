@@ -73,6 +73,17 @@ const staticData = {
       items: [{ title: "Generate QR", url: "/dashboard/generate-qr" }], // Added leading slash
     },
     {
+      title: "Analytics",
+      url: "/dashboard/analytics",
+      icon: PieChart,
+      items: [
+        { title: "Sales Analytics", url: "/dashboard/analytics/sales-analytics" },
+        { title: "Operations", url: "/dashboard/analytics/operations" },
+        { title: "Customer Insights", url: "/dashboard/analytics/customer-insights" },
+        { title: "Menu & Growth", url: "/dashboard/analytics/menu&growth" },
+      ],
+    },
+    {
       title: "Settings",
       url: "/dashboard/settings",
       icon: Settings2,
@@ -89,11 +100,6 @@ const staticData = {
       name: "Design Engineering",
       url: "#",
       icon: Frame,
-    },
-    {
-      name: "Sales & Marketing",
-      url: "#",
-      icon: PieChart,
     },
     {
       name: "Travel",
