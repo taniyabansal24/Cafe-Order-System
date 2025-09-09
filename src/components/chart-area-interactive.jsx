@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Area, AreaChart, CartesianGrid, XAxis } from "recharts";
+import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import axios from "axios";
 import { useIsMobile } from "@/hooks/use-mobile";
 import {
@@ -16,6 +16,10 @@ const chartConfig = {
   sales: {
     label: "Revenue",
     color: "var(--primary)",
+  },
+  orders: {
+    label: "Orders",
+    color: "var(--chart-2)",
   },
 };
 
@@ -65,6 +69,16 @@ export function ChartAreaInteractive() {
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(amount);
+  };
+
+  // Custom tooltip formatter to show both revenue and orders
+  const customTooltipFormatter = (value, name) => {
+    if (name === "sales") {
+      return [formatINR(value), " Revenue"];
+    } else if (name === "orders") {
+      return [value, " Orders"];
+    }
+    return [value, name];
   };
 
   if (loading) {
@@ -127,8 +141,12 @@ export function ChartAreaInteractive() {
           <AreaChart data={filteredData}>
             <defs>
               <linearGradient id="fillSales" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="var(--primary)" stopOpacity={0.8} />
-                <stop offset="95%" stopColor="var(--primary)" stopOpacity={0.05} />
+                <stop offset="5%" stopColor="var(--color-sales)" stopOpacity={0.8} />
+                <stop offset="95%" stopColor="var(--color-sales)" stopOpacity={0.05} />
+              </linearGradient>
+              <linearGradient id="fillOrders" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="var(--color-orders)" stopOpacity={0.8} />
+                <stop offset="95%" stopColor="var(--color-orders)" stopOpacity={0.05} />
               </linearGradient>
             </defs>
             <CartesianGrid vertical={false} />
@@ -145,6 +163,19 @@ export function ChartAreaInteractive() {
                 })
               }
             />
+            <YAxis 
+              yAxisId="left"
+              orientation="left"
+              tickLine={false}
+              axisLine={false}
+              tickFormatter={(value) => formatINR(value).replace('₹', '₹ ')}
+            />
+            <YAxis 
+              yAxisId="right"
+              orientation="right"
+              tickLine={false}
+              axisLine={false}
+            />
             <ChartTooltip
               cursor={false}
               content={
@@ -156,16 +187,25 @@ export function ChartAreaInteractive() {
                       year: "numeric",
                     })
                   }
-                  formatter={(value) => [formatINR(value), " Revenue"]}
+                  formatter={customTooltipFormatter}
                   indicator="dot"
                 />
               }
             />
             <Area
+              yAxisId="left"
               dataKey="sales"
               type="monotone"
               fill="url(#fillSales)"
-              stroke="var(--primary)"
+              stroke="var(--color-sales)"
+              strokeWidth={2}
+            />
+            <Area
+              yAxisId="right"
+              dataKey="orders"
+              type="monotone"
+              fill="url(#fillOrders)"
+              stroke="var(--color-orders)"
               strokeWidth={2}
             />
           </AreaChart>

@@ -76,6 +76,9 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+  --color-orders: hsl(222.2 84% 4.9%);
+  --color-revenue: hsl(142.1 76.2% 36.3%);
+  
 }
 
 .dark {
@@ -110,6 +113,8 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.439 0 0);
+  --color-orders: hsl(210 40% 98%);
+    --color-revenue: hsl(142.1 70% 45%);
 }
 
 

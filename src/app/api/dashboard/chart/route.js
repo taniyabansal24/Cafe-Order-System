@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import dbConnect from "@/lib/dbConnect";
 import OrderModel from "@/model/Order";
-
+import { timezone } from "@/lib/constants";
 
 export async function GET(req) {
   try {
@@ -10,22 +10,26 @@ export async function GET(req) {
     // Fetch only completed orders
     const orders = await OrderModel.aggregate([
       {
-        $match: { status: "completed" }
+        $match: { status: "completed" },
       },
       {
         $group: {
           _id: {
-            $dateToString: { format: "%Y-%m-%d", date: "$createdAt" }
+            $dateToString: {
+              format: "%Y-%m-%d",
+              date: "$createdAt",
+              timezone: timezone,
+            },
           },
           totalSales: { $sum: "$total" }, // This is in paise
-          totalOrders: { $sum: 1 }
-        }
+          totalOrders: { $sum: 1 },
+        },
       },
-      { $sort: { _id: 1 } }
+      { $sort: { _id: 1 } },
     ]);
 
     // Format data for Recharts - convert paise to rupees
-    const chartData = orders.map(item => ({
+    const chartData = orders.map((item) => ({
       date: item._id,
       sales: item.totalSales, // Convert paise to rupees
       orders: item.totalOrders,

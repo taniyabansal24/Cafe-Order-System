@@ -102,7 +102,7 @@ export function SectionCards() {
           <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
             {formatINR(metrics.monthlySales)}
           </CardTitle>
-          <CardAction>
+          {/* <CardAction>
             <Badge variant={hasSales ? "default" : "outline"}>
               {hasSales ? (
                 <>
@@ -116,7 +116,7 @@ export function SectionCards() {
                 </>
               )}
             </Badge>
-          </CardAction>
+          </CardAction> */}
         </CardHeader>
         <CardFooter className="flex-col items-start gap-1.5 text-sm">
           <div className="line-clamp-1 flex gap-2 font-medium">
@@ -195,7 +195,7 @@ export function SectionCards() {
       <Card className="@container/card">
         <CardHeader>
           <CardDescription>Top-Selling Item</CardDescription>
-          <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
+          <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-[22px]">
             {metrics.topItem.name}
           </CardTitle>
           <CardAction>

@@ -19,18 +19,29 @@ import {
   Filter,
   Receipt,
   Clock,
-  ChefHat
+  ChefHat,
+  Calendar
 } from "lucide-react";
+import { getTimeElapsed, formatDateTime } from "@/lib/timeUtils";
+import { timezone } from "@/lib/constants";
+import { 
+  applyOrderFilters, 
+  hasActiveFilters, 
+  getInitialFilters, 
+  getFilterConfig 
+} from "@/helpers/filterUtils";
 
 export default function AllOrdersPage() {
   const [orders, setOrders] = useState([]);
   const [filteredOrders, setFilteredOrders] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
   const [expandedOrder, setExpandedOrder] = useState(null);
   const [showFilters, setShowFilters] = useState(false);
-  const [statusFilter, setStatusFilter] = useState("");
+  
+  // Initialize filters using the helper function
+  const [filters, setFilters] = useState(getInitialFilters());
+  const filterConfig = getFilterConfig('allOrders');
 
   const fetchAllOrders = async () => {
     try {
@@ -40,7 +51,6 @@ export default function AllOrdersPage() {
       
       if (response.ok) {
         setOrders(data.orders || []);
-        setFilteredOrders(data.orders || []);
       } else {
         throw new Error(data.message || "Failed to fetch orders");
       }
@@ -85,27 +95,27 @@ export default function AllOrdersPage() {
   }, []);
 
   useEffect(() => {
-    let filtered = orders.filter(order =>
-      order.tokenNumber.toString().includes(searchTerm) ||
-      order.customerName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.items.some(item => 
-        item.name.toLowerCase().includes(searchTerm.toLowerCase())
-      )
-    );
-
-    if (statusFilter) {
-      filtered = filtered.filter(order => order.status === statusFilter);
-    }
-
+    const filtered = applyOrderFilters(orders, filters);
     setFilteredOrders(filtered);
-  }, [searchTerm, statusFilter, orders]);
+  }, [filters, orders]);
+
+  const handleFilterChange = (filterName, value) => {
+    setFilters(prev => ({
+      ...prev,
+      [filterName]: value
+    }));
+  };
+
+  const clearFilters = () => {
+    setFilters(getInitialFilters());
+  };
 
   const getStatusBadge = (status) => {
     const statusConfig = {
       pending: { variant: "secondary", icon: <Clock className="h-3 w-3 mr-1" /> },
       preparing: { variant: "default", icon: <ChefHat className="h-3 w-3 mr-1" /> },
       completed: { variant: "success", icon: <CheckCircle className="h-3 w-3 mr-1" /> },
-      cancelled: { variant: "destructive", icon: <XCircle className="h-3 w-3 mr-1" /> },
+      cancelled: {variant: "destructive", icon: <XCircle className="h-3 w-3 mr-1" /> },
     };
 
     const config = statusConfig[status] || statusConfig.pending;
@@ -119,43 +129,81 @@ export default function AllOrdersPage() {
     );
   };
 
-  // Function to get token number color based on status
   const getTokenNumberColor = (status) => {
     switch (status) {
       case "pending":
-        return "text-amber-600 dark:text-amber-500"; // Orange for pending
+        return "text-amber-600 dark:text-amber-500";
       case "completed":
-        return "text-green-600 dark:text-green-500"; // Green for completed
+        return "text-green-600 dark:text-green-500";
       case "cancelled":
-        return "text-red-600 dark:text-red-500"; // Red for cancelled
+        return "text-red-600 dark:text-red-500";
+      default:
+        return "";
     }
-  };
-
-  const getTimeElapsed = (createdAt) => {
-    const created = new Date(createdAt);
-    const now = new Date();
-    const diffMs = now - created;
-    const diffMins = Math.round(diffMs / 60000);
-    
-    if (diffMins < 1) return "Just now";
-    if (diffMins < 60) return `${diffMins} min ago`;
-    
-    const diffHours = Math.floor(diffMins / 60);
-    return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
-  };
-
-  const formatDateTime = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
   };
 
   const toggleExpand = (orderId) => {
     setExpandedOrder(expandedOrder === orderId ? null : orderId);
+  };
+
+  const renderFilterInput = (filterName, config) => {
+    switch (config.type) {
+      case 'search':
+        return (
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder={config.placeholder}
+              value={filters[filterName]}
+              onChange={(e) => handleFilterChange(filterName, e.target.value)}
+              className="pl-10"
+            />
+          </div>
+        );
+      
+      case 'number':
+        return (
+          <Input 
+            type="number" 
+            placeholder={config.placeholder} 
+            className="bg-background"
+            value={filters[filterName]}
+            onChange={(e) => handleFilterChange(filterName, e.target.value)}
+            min={config.min}
+          />
+        );
+      
+      case 'date':
+        return (
+          <div className="relative">
+            <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input 
+              type="date" 
+              className="pl-10 bg-background"
+              value={filters[filterName]}
+              onChange={(e) => handleFilterChange(filterName, e.target.value)}
+            />
+          </div>
+        );
+      
+      case 'select':
+        return (
+          <select 
+            className="w-full p-2 border rounded-md bg-background"
+            value={filters[filterName]}
+            onChange={(e) => handleFilterChange(filterName, e.target.value)}
+          >
+            {config.options.map(option => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        );
+      
+      default:
+        return null;
+    }
   };
 
   if (isLoading) {
@@ -208,15 +256,7 @@ export default function AllOrdersPage() {
       {/* Search and Filters */}
       <div className="flex flex-col gap-4">
         <div className="flex flex-col sm:flex-row gap-4">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search all orders..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
-          </div>
+          {renderFilterInput('searchTerm', filterConfig.searchTerm)}
           <Button
             variant="outline"
             onClick={() => setShowFilters(!showFilters)}
@@ -225,52 +265,45 @@ export default function AllOrdersPage() {
             <Filter className="h-4 w-4" />
             Filters
           </Button>
+          {hasActiveFilters(filters) && (
+            <Button
+              variant="ghost"
+              onClick={clearFilters}
+              className="w-full sm:w-auto justify-center"
+            >
+              Clear Filters
+            </Button>
+          )}
         </div>
 
         {showFilters && (
           <Card className="p-4">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label>Status</Label>
-                <select 
-                  className="w-full p-2 border rounded-md bg-background"
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                >
-                  <option value="">All statuses</option>
-                  <option value="pending">Pending</option>
-                  <option value="preparing">Preparing</option>
-                  <option value="completed">Completed</option>
-                  <option value="cancelled">Cancelled</option>
-                </select>
-              </div>
-              <div className="space-y-2">
-                <Label>Min Amount</Label>
-                <Input 
-                  type="number" 
-                  placeholder="₹ Min" 
-                  className="bg-background"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Payment Method</Label>
-                <select className="w-full p-2 border rounded-md bg-background">
-                  <option value="">All methods</option>
-                  <option value="cash">Cash</option>
-                  <option value="razorpay">Online</option>
-                </select>
-              </div>
+              {Object.entries(filterConfig).map(([filterName, config]) => {
+                if (filterName === 'searchTerm') return null;
+                return (
+                  <div key={filterName} className="space-y-2">
+                    <Label>{config.placeholder}</Label>
+                    {renderFilterInput(filterName, config)}
+                  </div>
+                );
+              })}
             </div>
           </Card>
         )}
       </div>
 
+      {/* Rest of your component remains the same */}
       {filteredOrders.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <div className="h-16 w-16 text-muted-foreground mb-4">📦</div>
-            <h3 className="text-lg font-medium text-foreground mb-2">No orders yet</h3>
-            <p className="text-muted-foreground text-center">Orders will appear here when customers place them</p>
+            <h3 className="text-lg font-medium text-foreground mb-2">No orders found</h3>
+            <p className="text-muted-foreground text-center">
+              {hasActiveFilters(filters) 
+                ? "Try adjusting your filters" 
+                : "Orders will appear here when customers place them"}
+            </p>
           </CardContent>
         </Card>
       ) : (
@@ -321,12 +354,12 @@ export default function AllOrdersPage() {
                 </div>
                 
                 <div className="hidden md:block col-span-1 text-sm text-muted-foreground">
-                  {getTimeElapsed(order.createdAt)}
+                  {getTimeElapsed(order.createdAt, timezone)}
                 </div>
                 
                 <div className="col-span-3 md:col-span-1 flex justify-end">
                   <div className="md:hidden text-xs text-muted-foreground mr-2">
-                    {getTimeElapsed(order.createdAt)}
+                    {getTimeElapsed(order.createdAt, timezone)}
                   </div>
                   <Button
                     variant="ghost"
@@ -428,7 +461,7 @@ export default function AllOrdersPage() {
                         {order.status === "completed" && (
                           <div className="text-sm text-green-600 font-medium p-3 bg-green-50 dark:bg-green-950/20 rounded-lg">
                             <CheckCircle className="h-4 w-4 mr-2 inline" />
-                            Order completed {getTimeElapsed(order.updatedAt)}
+                            Order completed {getTimeElapsed(order.createdAt, timezone)}
                           </div>
                         )}
                         {order.status === "cancelled" && (

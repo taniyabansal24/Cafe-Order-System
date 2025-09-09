@@ -19,6 +19,8 @@ import {
   Filter,
   Receipt
 } from "lucide-react";
+import { getTimeElapsed, formatDateTime } from "@/lib/timeUtils";
+import { timezone } from "@/lib/constants";
 
 export default function CompletedOrdersPage() {
   const [orders, setOrders] = useState([]);
@@ -64,32 +66,6 @@ export default function CompletedOrdersPage() {
     );
     setFilteredOrders(filtered);
   }, [searchTerm, orders]);
-
-  const getTimeElapsed = (createdAt) => {
-    const created = new Date(createdAt);
-    const now = new Date();
-    const diffMs = now - created;
-    const diffMins = Math.round(diffMs / 60000);
-    
-    if (diffMins < 1) return "Just now";
-    if (diffMins < 60) return `${diffMins} min ago`;
-    
-    const diffHours = Math.floor(diffMins / 60);
-    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
-    
-    const diffDays = Math.floor(diffHours / 24);
-    return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
-  };
-
-  const formatDateTime = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
 
   const toggleExpand = (orderId) => {
     setExpandedOrder(expandedOrder === orderId ? null : orderId);
@@ -243,7 +219,7 @@ export default function CompletedOrdersPage() {
                 </div>
                 
                 <div className="col-span-3 md:col-span-2 text-sm text-muted-foreground">
-                  {getTimeElapsed(order.updatedAt || order.createdAt)}
+                  {getTimeElapsed(order.createdAt, timezone)}
                 </div>
                 
                 <div className="col-span-3 md:col-span-1 flex justify-end">
