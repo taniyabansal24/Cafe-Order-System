@@ -48,33 +48,10 @@ import {
   IconCalendar,
   IconRefresh,
 } from "@tabler/icons-react";
-import {
-  Area,
-  AreaChart,
-  CartesianGrid,
-  XAxis,
-  LineChart,
-  Line,
-} from "recharts";
 import { toast } from "sonner";
-import { YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { TrendingUp } from "lucide-react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-} from "@/components/ui/chart";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Drawer,
@@ -113,34 +90,14 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { PeakHoursChart } from "@/components/peak-hours-chart";
 import { AnalyticsTab } from "@/components/analytics-tab";
-
-// Helper function to safely format dates
-const formatDate = (dateString) => {
-  if (!dateString) return "Invalid date";
-  try {
-    const date = new Date(dateString);
-    return isNaN(date.getTime())
-      ? "Invalid date"
-      : date.toISOString().split("T")[0];
-  } catch (error) {
-    return "Invalid date";
-  }
-};
-
-// Helper function to safely format time
-const formatTime = (dateString) => {
-  if (!dateString) return "Invalid time";
-  try {
-    const date = new Date(dateString);
-    return isNaN(date.getTime())
-      ? "Invalid time"
-      : date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-  } catch (error) {
-    return "Invalid time";
-  }
-};
+import {
+  getTimeElapsed,
+  formatDateTime,
+  formatTimeOnly,
+  formatDateOnly,
+} from "@/lib/timeUtils";
+import { timezone } from "@/lib/constants";
 
 // Helper function to transform API data to component format
 const transformApiData = (apiData) => {
@@ -286,7 +243,7 @@ const columns = [
     cell: ({ row }) => (
       <div className="flex items-center gap-1 text-sm">
         <IconClock className="size-4" />
-        {formatTime(row.original.orderTime)}
+        {formatTimeOnly(row.original.orderTime, timezone)}
       </div>
     ),
   },
@@ -887,31 +844,31 @@ export function DataTable() {
   );
 }
 
-const chartData = [
-  { hour: "9 AM", sales: 186 },
-  { hour: "10 AM", sales: 305 },
-  { hour: "11 AM", sales: 437 },
-  { hour: "12 PM", sales: 673 },
-  { hour: "1 PM", sales: 409 },
-  { hour: "2 PM", sales: 314 },
-  { hour: "3 PM", sales: 237 },
-  { hour: "4 PM", sales: 173 },
-];
+// const chartData = [
+//   { hour: "9 AM", sales: 186 },
+//   { hour: "10 AM", sales: 305 },
+//   { hour: "11 AM", sales: 437 },
+//   { hour: "12 PM", sales: 673 },
+//   { hour: "1 PM", sales: 409 },
+//   { hour: "2 PM", sales: 314 },
+//   { hour: "3 PM", sales: 237 },
+//   { hour: "4 PM", sales: 173 },
+// ];
 
-const chartConfig = {
-  sales: {
-    label: "Sales",
-    color: "var(--primary)",
-  },
-  orders: {
-    label: "Orders",
-    color: "var(--chart-1)",
-  },
-  revenue: {
-    label: "Revenue",
-    color: "var(--color-revenue)",
-  },
-};
+// const chartConfig = {
+//   sales: {
+//     label: "Sales",
+//     color: "var(--primary)",
+//   },
+//   orders: {
+//     label: "Orders",
+//     color: "var(--chart-1)",
+//   },
+//   revenue: {
+//     label: "Revenue",
+//     color: "var(--color-revenue)",
+//   },
+// };
 
 function TableCellViewer({ item }) {
   const isMobile = useIsMobile();
@@ -930,14 +887,9 @@ function TableCellViewer({ item }) {
         <DrawerHeader className="gap-1">
           <DrawerTitle>Order #{item.orderId || "N/A"}</DrawerTitle>
           <DrawerDescription>
-            {item.orderTime ? (
-              <>
-                {new Date(item.orderTime).toLocaleDateString()} at{" "}
-                {formatTime(item.orderTime)}
-              </>
-            ) : (
-              "Date not available"
-            )}
+            {item.orderTime
+              ? formatDateTime(item.orderTime, timezone)
+              : "Date not available"}
           </DrawerDescription>
         </DrawerHeader>
         <div className="flex flex-col gap-4 overflow-y-auto px-4 text-sm">
@@ -1043,7 +995,7 @@ function TableCellViewer({ item }) {
 
           {item.completionTime && (
             <div className="text-xs text-muted-foreground">
-              Completed at: {formatTime(item.completionTime)}
+              Completed at: {formatTimeOnly(item.completionTime, timezone)}
             </div>
           )}
         </div>

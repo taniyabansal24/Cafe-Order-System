@@ -17,6 +17,13 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart";
 import { Badge } from "@/components/ui/badge";
+import {
+  getTimeElapsed,
+  formatDateTime,
+  formatTimeOnly,
+  formatDateOnly,
+} from "@/lib/timeUtils";
+import { timezone } from "@/lib/constants";
 
 export function AnalyticsTab({ peakHourInfo, dateFilter }) {
   if (!peakHourInfo) return null;
@@ -34,8 +41,16 @@ export function AnalyticsTab({ peakHourInfo, dateFilter }) {
     },
   };
 
+  // Example: If you had a timestamp to format
+  const currentTime = new Date().toISOString();
+
   return (
     <div className="flex flex-col px-4 lg:px-6 gap-6">
+      {/* You could add time information here if needed */}
+      {/* <div className="text-sm text-muted-foreground">
+        Last updated: {formatTimeOnly(currentTime, timezone)}
+      </div> */}
+
       {/* Peak Hours Summary */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
@@ -66,9 +81,7 @@ export function AnalyticsTab({ peakHourInfo, dateFilter }) {
             <div className="text-2xl font-bold">
               {peakHourInfo.busyHours.length}
             </div>
-            <p className="text-xs text-muted-foreground">
-              Above average hours
-            </p>
+            <p className="text-xs text-muted-foreground">Above average hours</p>
           </CardContent>
         </Card>
 
@@ -80,12 +93,8 @@ export function AnalyticsTab({ peakHourInfo, dateFilter }) {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {peakHourInfo.totalOrders}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Total orders today
-            </p>
+            <div className="text-2xl font-bold">{peakHourInfo.totalOrders}</div>
+            <p className="text-xs text-muted-foreground">Total orders today</p>
           </CardContent>
         </Card>
       </div>
@@ -107,8 +116,8 @@ export function AnalyticsTab({ peakHourInfo, dateFilter }) {
               margin={{
                 left: 12,
                 right: 12,
-                top:20,
-                bottom: 50
+                top: 20,
+                bottom: 50,
               }}
             >
               <CartesianGrid vertical={false} />

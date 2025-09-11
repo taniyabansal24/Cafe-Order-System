@@ -59,10 +59,30 @@ const OrderSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Get the next token number
+// Get the next token number (resets daily - simpler version)
 OrderSchema.statics.getNextTokenNumber = async function () {
-  const lastOrder = await this.findOne().sort({ tokenNumber: -1 });
-  return lastOrder ? lastOrder.tokenNumber + 1 : 1;
+  // Get start of today in server's local time
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  
+  const tomorrowStart = new Date(todayStart);
+  tomorrowStart.setDate(tomorrowStart.getDate() + 1);
+
+  console.log('Today start:', todayStart);
+  console.log('Tomorrow start:', tomorrowStart);
+
+  // Find the highest token number for today
+  const lastOrderToday = await this.findOne({
+    createdAt: {
+      $gte: todayStart,
+      $lt: tomorrowStart
+    }
+  }).sort({ tokenNumber: -1 });
+
+  console.log('Last order today:', lastOrderToday);
+  
+  // If no orders today, start from 1
+  return lastOrderToday ? lastOrderToday.tokenNumber + 1 : 1;
 };
 
 // Prevent model overwrite error in dev

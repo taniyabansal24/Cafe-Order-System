@@ -78,9 +78,9 @@ const staticData = {
       icon: PieChart,
       items: [
         { title: "Sales Analytics", url: "/dashboard/analytics/sales-analytics" },
-        { title: "Operations", url: "/dashboard/analytics/operations" },
+        // { title: "Operations", url: "/dashboard/analytics/operations" },
         { title: "Customer Insights", url: "/dashboard/analytics/customer-insights" },
-        { title: "Menu & Growth", url: "/dashboard/analytics/menu&growth" },
+        // { title: "Menu & Growth", url: "/dashboard/analytics/menu&growth" },
       ],
     },
     {
@@ -96,16 +96,16 @@ const staticData = {
     },
   ],
   projects: [
-    {
-      name: "Design Engineering",
-      url: "#",
-      icon: Frame,
-    },
-    {
-      name: "Travel",
-      url: "#",
-      icon: Map,
-    },
+    // {
+    //   name: "Design Engineering",
+    //   url: "#",
+    //   icon: Frame,
+    // },
+    // {
+    //   name: "Travel",
+    //   url: "#",
+    //   icon: Map,
+    // },
   ],
 };
 
@@ -136,7 +136,7 @@ export function AppSidebar({ ...props }) {
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={staticData.navMain} />
-        <NavProjects projects={staticData.projects} />
+        {/* <NavProjects projects={staticData.projects} /> */}
       </SidebarContent>
       <SidebarFooter>
         {realUserData ? (
