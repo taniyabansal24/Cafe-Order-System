@@ -100,7 +100,10 @@ export function NavUser({ user }) {
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                 <Avatar className="h-8 w-8 rounded-lg">
                   <AvatarImage src={user.avatar} alt={user.name} />
-                  <AvatarFallback className="rounded-lg">CN</AvatarFallback>
+                  <AvatarFallback className="rounded-lg">
+                  {user.name.charAt(0)}
+                  {user.ownerName?.charAt(0) || ""}
+                </AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-medium">{user.name}</span>
@@ -119,7 +122,7 @@ export function NavUser({ user }) {
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuGroup>
+            {/* <DropdownMenuGroup>
               <DropdownMenuItem>
                 <BadgeCheck className="mr-2 h-4 w-4" />
                 <span>Account</span>
@@ -132,8 +135,8 @@ export function NavUser({ user }) {
                 <Bell className="mr-2 h-4 w-4" />
                 <span>Notifications</span>
               </DropdownMenuItem>
-            </DropdownMenuGroup>
-            <DropdownMenuSeparator />
+            </DropdownMenuGroup> */}
+            {/* <DropdownMenuSeparator /> */}
             <DropdownMenuItem onClick={handleLogout}>
               <LogOut onClick={handleLogout} className="mr-2 h-4 w-4" />
               <span>Log out</span>

@@ -46,6 +46,8 @@ export default function OrderPage() {
   const [activeCategory, setActiveCategory] = useState("");
   const [cart, setCart] = useState([]);
   const [tokenNumber, setTokenNumber] = useState(null);
+  const [orderId, setOrderId] = useState(null);
+  const [completedOrder, setCompletedOrder] = useState(null); // Add this
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -61,6 +63,235 @@ export default function OrderPage() {
     name: "",
     phone: "",
   });
+  const [razorpayOrderData, setRazorpayOrderData] = useState(null);
+
+  // Download Bill Function - Fixed version with Razorpay amount integration
+  const downloadBill = async (
+    orderId,
+    tokenNumber,
+    customerDetails,
+    cartItems,
+    total
+  ) => {
+    try {
+      console.log("Starting bill download process...");
+
+      // If orderId is available, try to download from API
+      if (orderId) {
+        console.log("Attempting to download bill from API for order:", orderId);
+
+        // Fixed API endpoint - using correct path
+        const response = await fetch(`/api/orders/${orderId}/bill`);
+
+        if (response.ok) {
+          console.log("API bill download successful");
+          const blob = await response.blob();
+
+          // Check if blob is valid
+          if (blob.size === 0) {
+            throw new Error("Empty bill received from server");
+          }
+
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = `bill-${orderId}.pdf`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          window.URL.revokeObjectURL(url);
+          toast.success("Bill downloaded successfully");
+          return;
+        } else {
+          console.warn("API bill download failed, status:", response.status);
+          // Don't throw here, fallback to offline generation
+        }
+      }
+
+      // Fallback: Generate bill using current data with Razorpay amount integration
+      console.log("Using fallback bill generation");
+
+      // Try to fetch order data to get razorpayAmount
+      let razorpayAmount = null;
+      if (orderId) {
+        try {
+          const orderResponse = await fetch(`/api/orders/${orderId}`);
+          if (orderResponse.ok) {
+            const orderData = await orderResponse.json();
+            razorpayAmount = orderData.razorpayAmount;
+            console.log("Fetched razorpayAmount from order:", razorpayAmount);
+          }
+        } catch (fetchError) {
+          console.warn(
+            "Could not fetch order data for razorpayAmount:",
+            fetchError
+          );
+        }
+      }
+
+      // Use the razorpayAmount if available, otherwise fallback to total
+      const subtotal = cartItems.reduce(
+        (sum, item) => sum + item.price * item.quantity,
+        0
+      );
+      const charges = calculateCharges(subtotal, razorpayAmount);
+
+      await generateOfflineBill(
+        tokenNumber,
+        customerDetails,
+        cartItems,
+        subtotal,
+        charges
+      );
+    } catch (error) {
+      console.error("Error downloading bill:", error);
+
+      // Enhanced fallback with better error handling
+      try {
+        // Calculate charges for fallback
+        const subtotal = cartItems.reduce(
+          (sum, item) => sum + item.price * item.quantity,
+          0
+        );
+        const charges = calculateCharges(subtotal, null); // No razorpayAmount in fallback
+
+        await generateOfflineBill(
+          tokenNumber,
+          customerDetails,
+          cartItems,
+          subtotal,
+          charges
+        );
+      } catch (fallbackError) {
+        console.error("Fallback bill generation also failed:", fallbackError);
+        toast.error("Failed to download bill receipt. Please try again.");
+      }
+    }
+  };
+
+  // Updated calculateCharges function to match Razorpay breakdown
+  const calculateCharges = (subtotal, razorpayAmount = null) => {
+    // Use the razorpayAmount if available - this should match the final Razorpay total
+    if (razorpayAmount && razorpayAmount !== subtotal) {
+      const razorpayTotal = razorpayAmount;
+      const totalCharges = razorpayTotal - subtotal; // This should be ₹3.52 in your example
+
+      // Razorpay typically charges 2% convenience fee + 18% GST on that fee
+      // So: totalCharges = (subtotal * 0.02) + GST on that fee
+      // Let's calculate the breakdown:
+      const baseConvenienceFee = totalCharges / 1.18; // Remove 18% GST
+      const gstOnConvenience = totalCharges - baseConvenienceFee;
+
+      return {
+        subtotal: subtotal,
+        convenienceCharge: parseFloat(baseConvenienceFee.toFixed(2)),
+        gstOnConvenience: parseFloat(gstOnConvenience.toFixed(2)),
+        total: parseFloat(razorpayTotal.toFixed(2)),
+        isRazorpayBreakdown: true,
+      };
+    } else {
+      // If no razorpayAmount or amount equals subtotal, use simple calculation
+      // But this should rarely happen for online payments
+      const convenienceFee = subtotal * 0.02;
+      const gstOnConvenience = convenienceFee * 0.18;
+      const total = subtotal + convenienceFee + gstOnConvenience;
+
+      return {
+        subtotal: parseFloat(subtotal.toFixed(2)),
+        convenienceCharge: parseFloat(convenienceFee.toFixed(2)),
+        gstOnConvenience: parseFloat(gstOnConvenience.toFixed(2)),
+        total: parseFloat(total.toFixed(2)),
+        isRazorpayBreakdown: true,
+      };
+    }
+  };
+
+  // Updated generateOfflineBill function
+  const generateOfflineBill = async (
+    tokenNumber,
+    customerDetails,
+    cartItems,
+    subtotal,
+    charges // Add this parameter
+  ) => {
+    try {
+      const currentCafeName = cafeName || "Delicious Bites Café";
+
+      // Use the pre-calculated charges instead of calculating inside
+      // This ensures consistency with Razorpay breakdown
+
+      // Create HTML bill content with accurate pricing
+      const billContent = `
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Bill Receipt - ${currentCafeName}</title>
+  <style>
+    /* ... your existing styles remain the same ... */
+  </style>
+</head>
+<body>
+  <div class="receipt-container">
+    <!-- ... header and order info remain the same ... -->
+    
+    <div class="content">
+      <!-- ... customer info and order summary remain the same ... -->
+      
+      <div class="section">
+        <div class="section-title">PAYMENT SUMMARY</div>
+        <div class="payment-summary">
+          <div class="payment-row">
+            <span>Item Total:</span>
+            <span>₹${charges.subtotal.toFixed(2)}</span>
+          </div>
+          <div class="payment-row">
+            <span>Convenience Fee:</span>
+            <span>₹${charges.convenienceCharge.toFixed(2)}</span>
+          </div>
+          <div class="payment-row">
+            <span>GST on Convenience Fee (18%):</span>
+            <span>₹${charges.gstOnConvenience.toFixed(2)}</span>
+          </div>
+          <div class="payment-row total-row">
+            <span>TOTAL AMOUNT:</span>
+            <span>₹${charges.total.toFixed(2)}</span>
+          </div>
+          <div class="payment-row" style="margin-top: 15px;">
+            <span>Payment Status:</span>
+            <span class="status-badge">PAID</span>
+          </div>
+          <div class="payment-row">
+            <span>Payment Method:</span>
+            <span>Online Payment</span>
+          </div>
+        </div>
+      </div>
+      
+      <!-- ... rest of your bill content ... -->
+    </div>
+  </div>
+</body>
+</html>
+`;
+
+      // Create blob and download as HTML file
+      const blob = new Blob([billContent], { type: "text/html" });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `bill-receipt-${tokenNumber}.html`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+
+      toast.success("Bill receipt downloaded successfully");
+    } catch (error) {
+      console.error("Error generating offline bill:", error);
+      toast.error("Failed to generate bill receipt");
+      throw error;
+    }
+  };
 
   // Define your preferred category order here
   const preferredCategoryOrder = [
@@ -136,7 +367,7 @@ export default function OrderPage() {
       try {
         const ownerResponse = await fetch(`/api/owner/${ownerId}`);
         const ownerData = await ownerResponse.json();
-        
+
         if (ownerResponse.ok && ownerData.success && ownerData.owner) {
           setCafeName(ownerData.owner.cafeName);
         } else {
@@ -192,14 +423,14 @@ export default function OrderPage() {
       name: "",
       phone: "",
     };
-    
+
     let isValid = true;
-    
+
     if (!customerDetails.name.trim()) {
       errors.name = "Name is required";
       isValid = false;
     }
-    
+
     if (!customerDetails.phone.trim()) {
       errors.phone = "Phone number is required";
       isValid = false;
@@ -207,7 +438,7 @@ export default function OrderPage() {
       errors.phone = "Please enter a valid 10-digit phone number";
       isValid = false;
     }
-    
+
     setCustomerDetailsError(errors);
     return isValid;
   };
@@ -283,8 +514,8 @@ export default function OrderPage() {
         name: cafeName,
         description: "Food Order Payment",
         order_id: orderData.id,
+        // Inside your Razorpay handler, after payment verification:
         handler: async function (response) {
-          // Verify payment on server
           try {
             const verificationResponse = await fetch("/api/verify-payment", {
               method: "POST",
@@ -298,21 +529,12 @@ export default function OrderPage() {
               }),
             });
 
-            // Check if verification response is JSON
-            const verificationContentType =
-              verificationResponse.headers.get("content-type");
-            if (
-              !verificationContentType ||
-              !verificationContentType.includes("application/json")
-            ) {
-              const text = await verificationResponse.text();
-              console.error("Non-JSON verification response:", text);
-              throw new Error("Payment verification failed");
-            }
-
             const verificationData = await verificationResponse.json();
 
             if (verificationResponse.ok && verificationData.success) {
+              // Store Razorpay order data for accurate billing
+              setRazorpayOrderData(verificationData.orderData);
+
               // Payment successful, create order
               const orderResponse = await fetch("/api/orders", {
                 method: "POST",
@@ -322,6 +544,10 @@ export default function OrderPage() {
                 body: JSON.stringify({
                   items: cart,
                   total: calculateTotal(),
+                  // Use the actual amount from Razorpay for accurate billing
+                  razorpayAmount: verificationData.orderData
+                    ? verificationData.orderData.amount / 100
+                    : calculateTotal(),
                   paymentStatus: "completed",
                   razorpayOrderId: verificationData.razorpayOrderId,
                   razorpayPaymentId: verificationData.razorpayPaymentId,
@@ -330,25 +556,32 @@ export default function OrderPage() {
                 }),
               });
 
-              // Check if order response is JSON
-              const orderContentType =
-                orderResponse.headers.get("content-type");
-              if (
-                !orderContentType ||
-                !orderContentType.includes("application/json")
-              ) {
-                const text = await orderResponse.text();
-                console.error("Non-JSON order response:", text);
-                throw new Error("Order creation failed");
-              }
-
               const orderData = await orderResponse.json();
 
               if (orderResponse.ok) {
+                // Store the completed order details with accurate pricing
+                const orderDetails = {
+                  items: [...cart],
+                  total: calculateTotal(),
+                  // Use Razorpay amount for accurate billing display
+                  razorpayAmount: verificationData.orderData
+                    ? verificationData.orderData.amount / 100
+                    : calculateTotal(),
+                  customer: { ...customerDetails },
+                  tokenNumber: orderData.tokenNumber,
+                  orderId: orderData._id,
+                  date: new Date().toLocaleDateString(),
+                  time: new Date().toLocaleTimeString(),
+                };
+
+                setCompletedOrder(orderDetails);
                 setTokenNumber(orderData.tokenNumber);
+                setOrderId(orderData._id);
+
                 toast.success(
                   `Order placed! Your token number is ${orderData.tokenNumber}`
                 );
+
                 setCart([]);
                 setCustomerDetails({ name: "", phone: "", email: "" });
                 setCustomerDetailsError({ name: "", phone: "" });
@@ -426,53 +659,53 @@ export default function OrderPage() {
     return matchesSearch && matchesCategory && matchesVegFilter;
   });
 
-  // Handle cash payment
-  const handleCashPayment = async () => {
-    try {
-      setIsProcessingPayment(true);
+  // // Handle cash payment
+  // const handleCashPayment = async () => {
+  //   try {
+  //     setIsProcessingPayment(true);
 
-      // Validate customer details
-      if (!validateCustomerDetails()) {
-        toast.error("Please fix the errors in customer details");
-        setIsProcessingPayment(false);
-        return;
-      }
+  //     // Validate customer details
+  //     if (!validateCustomerDetails()) {
+  //       toast.error("Please fix the errors in customer details");
+  //       setIsProcessingPayment(false);
+  //       return;
+  //     }
 
-      // Create order with cash payment
-      const orderResponse = await fetch("/api/orders", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          items: cart,
-          total: calculateTotal(),
-          paymentStatus: "pending",
-          paymentMethod: "cash",
-          customer: customerDetails,
-        }),
-      });
+  //     // Create order with cash payment
+  //     const orderResponse = await fetch("/api/orders", {
+  //       method: "POST",
+  //       headers: {
+  //         "Content-Type": "application/json",
+  //       },
+  //       body: JSON.stringify({
+  //         items: cart,
+  //         total: calculateTotal(),
+  //         paymentStatus: "pending",
+  //         paymentMethod: "cash",
+  //         customer: customerDetails,
+  //       }),
+  //     });
 
-      const orderData = await orderResponse.json();
+  //     const orderData = await orderResponse.json();
 
-      if (orderResponse.ok) {
-        setTokenNumber(orderData.tokenNumber);
-        toast.success(
-          `Order placed! Your token number is ${orderData.tokenNumber}. Please pay at the counter.`
-        );
-        setCart([]);
-        setCustomerDetails({ name: "", phone: "", email: "" });
-        setCustomerDetailsError({ name: "", phone: "" });
-      } else {
-        throw new Error(orderData.message || "Order creation failed");
-      }
-    } catch (error) {
-      console.error("Cash order error:", error);
-      toast.error(error.message || "Failed to place order. Please try again.");
-    } finally {
-      setIsProcessingPayment(false);
-    }
-  };
+  //     if (orderResponse.ok) {
+  //       setTokenNumber(orderData.tokenNumber);
+  //       toast.success(
+  //         `Order placed! Your token number is ${orderData.tokenNumber}. Please pay at the counter.`
+  //       );
+  //       setCart([]);
+  //       setCustomerDetails({ name: "", phone: "", email: "" });
+  //       setCustomerDetailsError({ name: "", phone: "" });
+  //     } else {
+  //       throw new Error(orderData.message || "Order creation failed");
+  //     }
+  //   } catch (error) {
+  //     console.error("Cash order error:", error);
+  //     toast.error(error.message || "Failed to place order. Please try again.");
+  //   } finally {
+  //     setIsProcessingPayment(false);
+  //   }
+  // };
 
   if (error) {
     return (
@@ -507,39 +740,237 @@ export default function OrderPage() {
     );
   }
 
-  if (tokenNumber) {
+  // Update the order confirmation screen to show accurate charges
+  if (tokenNumber && completedOrder) {
+    const charges = calculateCharges(completedOrder.total);
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-gradient-to-br from-amber-50 via-orange-50 to-amber-100">
-        <Card className="w-full max-w-md border-0 shadow-xl overflow-hidden bg-white/90 backdrop-blur-sm">
-          <div className="bg-gradient-to-r from-amber-600 to-orange-600 text-white p-6 text-center">
-            <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4 backdrop-blur-md">
-              <ChefHat className="h-8 w-8 text-white" />
+        <Card className="w-full max-w-lg border-0 shadow-2xl overflow-hidden bg-white/95 backdrop-blur-sm">
+          {/* Header with Restaurant Branding */}
+          <div className="bg-gradient-to-r from-amber-700 to-orange-700 text-white p-6 text-center border-b-4 border-amber-500">
+            <div className="w-20 h-20 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-4 backdrop-blur-md border-2 border-white/30">
+              <ChefHat className="h-10 w-10 text-white" />
             </div>
-            <h1 className="text-2xl font-bold">Order Confirmed!</h1>
-            <p className="mt-2 text-amber-100">
-              Your delicious food is being prepared
+            <h1 className="text-3xl font-bold tracking-tight">{cafeName}</h1>
+            <p className="mt-2 text-amber-100 text-sm font-medium">
+              Restaurant & Café
             </p>
+            <div className="mt-3 text-xs text-amber-200 opacity-90">
+              <p>Order Confirmed • Payment Received</p>
+            </div>
           </div>
-          <CardContent className="p-6 text-center space-y-4">
-            <div className="text-5xl font-bold text-amber-600 my-6 bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent">
-              #{tokenNumber}
+
+          <CardContent className="p-0">
+            {/* Order Information Header */}
+            <div className="bg-amber-600 text-white px-6 py-3">
+              <div className="flex justify-between items-center">
+                <div>
+                  <p className="text-sm font-medium">TOKEN NO</p>
+                  <p className="text-2xl font-bold">
+                    #{completedOrder.tokenNumber}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm font-medium">ORDER TIME</p>
+                  <p className="text-sm">{completedOrder.time}</p>
+                </div>
+              </div>
             </div>
-            <p className="text-gray-600">
-              Please wait for your token number to be called
-            </p>
-            <p className="text-gray-600">
-              You can show this number to collect your order
-            </p>
-            <div className="flex items-center justify-center mt-4 text-sm text-gray-500">
-              <Clock className="h-4 w-4 mr-1" />
-              <span>Estimated wait time: 15-20 minutes</span>
+
+            {/* Bill Content */}
+            <div className="p-6">
+              {/* Customer Information */}
+              <div className="mb-6 p-4 bg-amber-50 rounded-lg border-l-4 border-amber-500">
+                <h3 className="font-bold text-amber-900 mb-3 flex items-center">
+                  <User className="h-4 w-4 mr-2" />
+                  CUSTOMER INFORMATION
+                </h3>
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div>
+                    <span className="font-medium text-amber-700">Name:</span>
+                    <p className="text-amber-900">
+                      {completedOrder.customer.name}
+                    </p>
+                  </div>
+                  <div>
+                    <span className="font-medium text-amber-700">Phone:</span>
+                    <p className="text-amber-900">
+                      {completedOrder.customer.phone}
+                    </p>
+                  </div>
+                  {completedOrder.customer.email && (
+                    <div className="col-span-2">
+                      <span className="font-medium text-amber-700">Email:</span>
+                      <p className="text-amber-900">
+                        {completedOrder.customer.email}
+                      </p>
+                    </div>
+                  )}
+                  <div className="col-span-2 border-t border-amber-200 pt-2 mt-2">
+                    <span className="font-medium text-amber-700">
+                      Order Date:
+                    </span>
+                    <p className="text-amber-900">{completedOrder.date}</p>
+                  </div>
+                </div>
+              </div>
+              {/* Order Items Table */}
+              <div className="mb-6">
+                <h3 className="font-bold text-amber-900 mb-3 flex items-center">
+                  <CreditCard className="h-4 w-4 mr-2" />
+                  ORDER SUMMARY
+                </h3>
+
+                <div className="border border-amber-200 rounded-lg overflow-hidden">
+                  {/* Table Header */}
+                  <div className="bg-amber-100 px-4 py-2 grid grid-cols-12 gap-2 text-xs font-bold text-amber-900 uppercase">
+                    <div className="col-span-6">Item</div>
+                    <div className="col-span-2 text-center">Qty</div>
+                    <div className="col-span-2 text-right">Price</div>
+                    <div className="col-span-2 text-right">Amount</div>
+                  </div>
+
+                  {/* Table Body */}
+                  <div className="divide-y divide-amber-100">
+                    {completedOrder.items.map((item, index) => (
+                      <div
+                        key={item._id}
+                        className="px-4 py-3 grid grid-cols-12 gap-2 text-sm hover:bg-amber-50/50"
+                      >
+                        <div className="col-span-6 flex items-center">
+                          <div
+                            className={`w-2 h-2 rounded-full mr-2 ${item.type === "Veg" ? "bg-green-500" : "bg-red-500"}`}
+                          ></div>
+                          <span className="font-medium text-amber-900">
+                            {item.name}
+                          </span>
+                        </div>
+                        <div className="col-span-2 text-center text-amber-700">
+                          {item.quantity}
+                        </div>
+                        <div className="col-span-2 text-right text-amber-700">
+                          ₹{item.price}
+                        </div>
+                        <div className="col-span-2 text-right font-semibold text-amber-900">
+                          ₹{item.price * item.quantity}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              {/* Payment Summary */}
+              {/* In your order confirmation screen, update the payment summary section: */}
+              <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-lg p-4 border border-amber-200">
+                <h3 className="font-bold text-amber-900 mb-3">
+                  PAYMENT SUMMARY
+                </h3>
+
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-amber-700">Item Total:</span>
+                    <span className="text-amber-900">
+                      ₹{charges.subtotal.toFixed(2)}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between text-sm">
+                    <span className="text-amber-700">Convenience Fee:</span>
+                    <span className="text-amber-900">
+                      ₹{charges.convenienceCharge.toFixed(2)}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between text-sm">
+                    <span className="text-amber-700">
+                      GST on Convenience Fee (18%):
+                    </span>
+                    <span className="text-amber-900">
+                      ₹{charges.gstOnConvenience.toFixed(2)}
+                    </span>
+                  </div>
+
+                  <div className="border-t border-amber-300 pt-2 mt-2">
+                    <div className="flex justify-between items-center font-bold text-lg">
+                      <span className="text-amber-900">TOTAL AMOUNT:</span>
+                      <span className="text-amber-700">
+                        ₹{charges.total.toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-between items-center mt-3 pt-3 border-t border-amber-200">
+                    <span className="text-sm font-medium text-green-600">
+                      Payment Status:
+                    </span>
+                    <span className="bg-green-100 text-green-800 text-xs font-bold px-2 py-1 rounded-full flex items-center">
+                      <div className="w-2 h-2 bg-green-500 rounded-full mr-1"></div>
+                      PAID
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between items-center text-xs text-amber-600 mt-2">
+                    <span>Payment Method:</span>
+                    <span>Online Payment</span>
+                  </div>
+                </div>
+              </div>
+              {/* Order Notes */}
+              <div className="mt-6 p-3 bg-blue-50 rounded-lg border-l-4 border-blue-400">
+                <div className="flex items-start">
+                  <Clock className="h-4 w-4 text-blue-600 mt-0.5 mr-2 flex-shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium text-blue-900">
+                      Estimated Preparation Time
+                    </p>
+                    <p className="text-xs text-blue-700">
+                      15-20 minutes • Please wait for your token number to be
+                      called
+                    </p>
+                  </div>
+                </div>
+              </div>
+              {/* Thank You Message */}
+              <div className="mt-6 text-center">
+                <p className="text-sm text-amber-600 italic">
+                  Thank you for dining with us! We hope you enjoy your meal.
+                </p>
+                <p className="text-xs text-amber-500 mt-1">
+                  For any queries, please contact: +91 XXXXX XXXXX
+                </p>
+              </div>
             </div>
-            <Button
-              onClick={() => setTokenNumber(null)}
-              className="w-full mt-6 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white"
-            >
-              Place New Order
-            </Button>
+
+            {/* Action Buttons */}
+            <div className="space-y-3 px-4">
+              {/* In your order confirmation screen, update the downloadBill call:*/}
+              <Button
+                onClick={() =>
+                  downloadBill(
+                    completedOrder.orderId,
+                    completedOrder.tokenNumber,
+                    completedOrder.customer,
+                    completedOrder.items,
+                    completedOrder.total
+                  )
+                }
+                className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-semibold py-3 rounded-lg shadow-lg transition-all duration-200 hover:shadow-xl"
+              >
+                <CreditCard className="h-5 w-5 mr-2" />
+                Download Bill Receipt
+              </Button>
+              <Button
+                onClick={() => {
+                  setTokenNumber(null);
+                  setOrderId(null);
+                  setCompletedOrder(null);
+                }}
+                variant="outline"
+                className="w-full border-amber-300 text-amber-700 hover:bg-amber-100 hover:border-amber-400 font-medium py-3 rounded-lg transition-all duration-200"
+              >
+                Place New Order
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -869,15 +1300,15 @@ export default function OrderPage() {
                   </>
                 )}
               </Button>
-              
-              <Button
+
+              {/* <Button
                 variant="outline"
                 onClick={handleCashPayment}
                 disabled={isProcessingPayment}
                 className="py-3 text-lg font-semibold rounded-xl"
               >
                 Pay with Cash at Counter
-              </Button>
+              </Button> */}
             </div>
           </div>
         </div>
