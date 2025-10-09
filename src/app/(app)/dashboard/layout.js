@@ -17,6 +17,13 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { usePathname } from "next/navigation";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { ChevronDown, MoreHorizontal } from "lucide-react";
 
 export default function DashboardLayout({ children }) {
   const pathname = usePathname();
@@ -32,17 +39,55 @@ export default function DashboardLayout({ children }) {
       <AppSidebar variant="inset" />
       <SidebarInset>
         <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
-          <div className="flex items-center gap-2 px-4">
+          <div className="flex items-center gap-2 px-4 w-full">
             <SidebarTrigger className="-ml-1" />
             <Separator
               orientation="vertical"
               className="mr-2 data-[orientation=vertical]:h-4"
             />
-            <Breadcrumb>
+            
+            {/* Mobile Breadcrumb */}
+            <div className="md:hidden flex-1 min-w-0">
+              <DropdownMenu>
+                <DropdownMenuTrigger className="flex items-center gap-1 text-sm font-medium px-2 py-1 rounded-md hover:bg-gray-100 transition-colors">
+                  <span className="truncate">
+                    {pathSegments.length > 1 
+                      ? pathSegments[pathSegments.length - 1]
+                          .split('-')
+                          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                          .join(' ')
+                      : 'Dashboard'
+                    }
+                  </span>
+                  <ChevronDown className="h-4 w-4 shrink-0" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start">
+                  {pathSegments.map((segment, index) => {
+                    const href = `/${pathSegments.slice(0, index + 1).join('/')}`;
+                    const label = segment
+                      .split('-')
+                      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                      .join(' ');
+                    
+                    return (
+                      <DropdownMenuItem key={index} asChild>
+                        <BreadcrumbLink href={href} className="flex items-center gap-2">
+                          {label}
+                        </BreadcrumbLink>
+                      </DropdownMenuItem>
+                    );
+                  })}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+
+            {/* Desktop Breadcrumb */}
+            <Breadcrumb className="hidden md:block">
               <BreadcrumbList>
-                <BreadcrumbItem className="hidden md:block">
+                <BreadcrumbItem>
                   <BreadcrumbLink href="/dashboard">Dashboard</BreadcrumbLink>
                 </BreadcrumbItem>
+
                 {pathSegments.slice(1).map((segment, index) => {
                   const href = `/${pathSegments.slice(0, index + 2).join('/')}`;
                   const isLast = index === pathSegments.length - 2;
@@ -52,7 +97,7 @@ export default function DashboardLayout({ children }) {
                     .join(' ');
 
                   return (
-                    <span key={index} className="hidden md:flex items-center">
+                    <span key={index} className="flex items-center">
                       <BreadcrumbSeparator />
                       <BreadcrumbItem>
                         {isLast ? (

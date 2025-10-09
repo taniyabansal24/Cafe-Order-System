@@ -2,7 +2,8 @@
 
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react"; // Combined imports
+import { gsap } from "gsap";
 import * as z from "zod";
 import axios from "axios";
 import { useRouter } from "next/navigation";
@@ -36,6 +37,70 @@ import { signUpSchema } from "@/schemas/signUpSchema";
 
 export default function SignUpPage() {
   const router = useRouter();
+  const logoRef = useRef(null);
+  const textRef = useRef(null);
+
+  // Animation useEffect
+  useEffect(() => {
+    const tl = gsap.timeline();
+
+    // Initial state - logo starts from center with scale 0
+    gsap.set(logoRef.current, {
+      position: 'absolute',
+      left: '50%',
+      top: '50%',
+      xPercent: -50,
+      yPercent: -50,
+      scale: 0,
+      rotation: -180,
+      opacity: 0
+    });
+
+    gsap.set(textRef.current, {
+      position: 'absolute',
+      left: '50%',
+      top: '50%',
+      xPercent: -50,
+      yPercent: -50,
+      opacity: 0,
+      scale: 0.8
+    });
+
+    // Animation sequence with more dramatic effects
+    tl.to(logoRef.current, {
+      opacity: 1,
+      scale: 1.5,
+      rotation: 0,
+      duration: 1,
+      ease: "elastic.out(1, 0.5)"
+    })
+    .to(logoRef.current, {
+      scale: 1,
+      duration: 0.6,
+      ease: "power2.out"
+    })
+    .to(logoRef.current, {
+      left: '0%',
+      xPercent: 0,
+      duration: 1,
+      ease: "power2.inOut"
+    })
+    .fromTo(textRef.current, {
+      opacity: 0,
+      scale: 0.8
+    }, {
+      opacity: 1,
+      scale: 1,
+      left: '60px',
+      xPercent: 0,
+      duration: 0.8,
+      ease: "back.out(1.7)"
+    }, "-=0.6");
+
+    return () => {
+      tl.kill();
+    };
+  }, []);
 
   const form = useForm({
     resolver: zodResolver(signUpSchema),
@@ -57,6 +122,7 @@ export default function SignUpPage() {
   const [cities, setCities] = useState([]);
   const [selectedState, setSelectedState] = useState(null);
 
+  // Form watch useEffect for pincode
   useEffect(() => {
     const subscription = form.watch((value, { name }) => {
       const pincode = value.pincode;
@@ -180,15 +246,41 @@ export default function SignUpPage() {
 
   return (
     <div className="flex justify-center items-center min-h-screen bg-background text-foreground">
-      <div className="w-[95%] max-w-xl py-8 px-6 md:p-8 space-y-8 bg-card rounded-lg shadow-md my-2 md:my-6">
-        <div className="text-center">
-          <h1 className="text-4xl font-extrabold tracking-tight lg:text-5xl mb-6">
-            Cafe Order System
-          </h1>
-          <p className="mb-4 text-muted-foreground">
-            Sign-up to start your cafe order system
-          </p>
-        </div>
+      <div className="w-[95%] max-w-xl py-8 px-6 md:p-8 space-y-8 bg-white rounded-lg shadow-md my-2 md:my-6 border border-gray-200">
+        <div className="text-center relative h-20 mb-6">
+          {" "}
+          {/* Added relative positioning and fixed height */}
+          {/* Logo Container */}
+          <div
+            ref={logoRef}
+            className="flex aspect-square size-12 items-center justify-center rounded-4xl border-2 border-gray-800 bg-gray-100 shadow-md absolute"
+          >
+            <img
+              src="/assets/logo.png"
+              alt="Cafe Order Logo"
+              className="size-8"
+              onError={(e) => {
+                e.target.style.display = "none";
+                e.target.nextSibling.style.display = "flex";
+              }}
+            />
+            <div className="hidden size-8 items-center justify-center text-gray-700 font-bold text-lg">
+              ☕
+            </div>
+
+            {/* Text Container */}
+            <h1
+              ref={textRef}
+              className="text-4xl font-extrabold tracking-tight lg:text-5xl w-max text-gray-900 absolute"
+            >
+              Cafe Order System
+            </h1>
+          </div>
+          </div>
+
+        <p className="mb-4 text-gray-600 text-center">
+          Sign-up to start your cafe order system
+        </p>
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
