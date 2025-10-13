@@ -211,6 +211,16 @@ export default function SignInPage() {
               )}
             />
 
+            {/* Forgot Password Link */}
+            <div className="text-right">
+              <Link
+                href="/forgot-password"
+                className="text-sm text-primary hover:text-primary/80 underline"
+              >
+                Forgot Password?
+              </Link>
+            </div>
+
             {/* Submit Button */}
             <Button type="submit" disabled={isSubmitting} className="w-full">
               {isSubmitting ? (
@@ -237,4 +247,4 @@ export default function SignInPage() {
       </div>
     </div>
   );
-}
+} 

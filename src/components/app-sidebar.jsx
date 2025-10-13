@@ -29,23 +29,6 @@ import {
 
 // This is sample data for teams and navigation (keeping static for now)
 const staticData = {
-  teams: [
-    {
-      name: "Acme Inc",
-      logo: GalleryVerticalEnd,
-      plan: "Enterprise",
-    },
-    {
-      name: "Acme Corp.",
-      logo: AudioWaveform,
-      plan: "Startup",
-    },
-    {
-      name: "Evil Corp.",
-      logo: Command,
-      plan: "Free",
-    },
-  ],
   navMain: [
     {
       title: "Menu Items",
@@ -58,7 +41,7 @@ const staticData = {
     },
     {
       title: "Orders",
-      url: "",
+      url: "/dashboard/orders/pending",
       icon: Sandwich,
       items: [
         { title: "Pending Orders", url: "/dashboard/orders/pending" },
@@ -132,7 +115,7 @@ export function AppSidebar({ ...props }) {
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
-        <TeamSwitcher teams={staticData.teams} />
+        <TeamSwitcher />
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={staticData.navMain} />

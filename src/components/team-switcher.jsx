@@ -137,7 +137,7 @@ export function TeamSwitcher({ teams }) {
                 </div>
               </div>
 
-              <ChevronsUpDown className="ml-auto" />
+              
             </SidebarMenuButton>
           </DropdownMenuTrigger>
         </DropdownMenu>
