@@ -16,10 +16,10 @@ export function SectionCards() {
   const { data: session } = useSession();
   const [metrics, setMetrics] = useState({
     dailySales: 0,
-    monthlySales: 0,  // This should show 410 for December
+    monthlySales: 0, // This should show 410 for December
     activeOrders: 0,
     topItem: { name: "-", quantity: 0 },
-    debug: { ordersByStatus: [] }
+    debug: { ordersByStatus: [] },
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -51,15 +51,17 @@ export function SectionCards() {
 
   // Fixed currency formatting
   const formatINR = (amount) => {
-    if (typeof amount !== 'number' || isNaN(amount)) {
-      return '₹0';
+    if (typeof amount !== "number" || isNaN(amount)) {
+      return "₹0";
     }
-    return `₹${amount.toLocaleString('en-IN')}`;
+    return `₹${amount.toLocaleString("en-IN")}`;
   };
 
   // Calculate completed orders count
-  const completedOrdersCount = metrics.debug?.ordersByStatus?.find(status => status._id === 'completed')?.count || 0;
-  
+  const completedOrdersCount =
+    metrics.debug?.ordersByStatus?.find((status) => status._id === "completed")
+      ?.count || 0;
+
   // Check if there are sales
   const hasSales = metrics.dailySales > 0 || metrics.monthlySales > 0;
 
@@ -111,7 +113,6 @@ export function SectionCards() {
 
   return (
     <div className="*:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card grid grid-cols-1 gap-4 px-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:shadow-xs lg:px-6 @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
-      
       {/* Current Month Revenue Card */}
       <Card className="@container/card">
         <CardHeader>
@@ -134,15 +135,16 @@ export function SectionCards() {
         </CardHeader>
         <CardFooter className="flex-col items-start gap-1.5 text-sm">
           <div className="line-clamp-1 flex gap-2 font-medium">
-            {completedOrdersCount > 0 ? `${completedOrdersCount} completed orders` : 'Revenue Overview'}
+            {completedOrdersCount > 0
+              ? `${completedOrdersCount} completed orders`
+              : "Revenue Overview"}
           </div>
           <div className="text-muted-foreground">
-            {completedOrdersCount > 0 && !hasSales 
-              ? "Orders exist but revenue calculation issue" 
+            {completedOrdersCount > 0 && !hasSales
+              ? "Orders exist but revenue calculation issue"
               : hasSales
-              ? "December 2025 performance"
-              : "Complete orders to see revenue"
-            }
+                ? `${new Date().toLocaleString("default", { month: "long" })} ${new Date().getFullYear()} performance`
+                : "Complete orders to see revenue"}
           </div>
         </CardFooter>
       </Card>
@@ -172,7 +174,12 @@ export function SectionCards() {
             Daily performance <IconTrendingUp className="size-4" />
           </div>
           <div className="text-muted-foreground">
-            Revenue generated on December 1, 2025
+            Revenue generated on{" "}
+            {new Date().toLocaleDateString("en-US", {
+              month: "long",
+              day: "numeric",
+              year: "numeric",
+            })}
           </div>
         </CardFooter>
       </Card>
@@ -213,7 +220,9 @@ export function SectionCards() {
             {metrics.topItem.name}
           </CardTitle>
           <CardAction>
-            <Badge variant={metrics.topItem.quantity > 0 ? "default" : "outline"}>
+            <Badge
+              variant={metrics.topItem.quantity > 0 ? "default" : "outline"}
+            >
               {metrics.topItem.quantity > 0 ? (
                 <>
                   <IconTrendingUp className="h-4 w-4 mr-1" />
@@ -232,7 +241,6 @@ export function SectionCards() {
           <div className="text-muted-foreground">Update menu or stock</div>
         </CardFooter>
       </Card>
-
     </div>
   );
 }

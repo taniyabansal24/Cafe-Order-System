@@ -66,17 +66,17 @@ const staticData = {
         // { title: "Menu & Growth", url: "/dashboard/analytics/menu&growth" },
       ],
     },
-    {
-      title: "Settings",
-      url: "/dashboard/settings",
-      icon: Settings2,
-      items: [
-        { title: "General", url: "/dashboard/settings/general" },
-        { title: "Team", url: "/dashboard/settings/team" },
-        { title: "Billing", url: "/dashboard/settings/billing" },
-        { title: "Limits", url: "/dashboard/settings/limits" },
-      ],
-    },
+    // {
+    //   title: "Settings",
+    //   url: "/dashboard/settings",
+    //   icon: Settings2,
+    //   items: [
+    //     { title: "General", url: "/dashboard/settings/general" },
+    //     { title: "Team", url: "/dashboard/settings/team" },
+    //     { title: "Billing", url: "/dashboard/settings/billing" },
+    //     { title: "Limits", url: "/dashboard/settings/limits" },
+    //   ],
+    // },
   ],
   projects: [
     // {

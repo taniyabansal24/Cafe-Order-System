@@ -1,25 +1,53 @@
+// src/components/theme-wrapper.js
 'use client';
 
 import { usePathname } from "next/navigation";
 import { ThemeProvider } from "./theme-provider";
 import { ThemeToggle } from "./theme-toggle";
+import { useEffect, useState } from "react";
 
 export default function ThemeWrapper({ children }) {
   const pathname = usePathname();
+  const [mounted, setMounted] = useState(false);
   
-  // Define routes where dark mode should be available
+  // Define routes where theme should be available
   const themeRoutes = [
     '/dashboard',
-    '/signin',
-    '/signup',
-    // Add other dashboard-related routes here
+    '/sign-in',
+    '/sign-up',
   ];
   
-  const shouldApplyTheme = themeRoutes.some(route => 
+  // Define order-related routes that should NOT have theme
+  const orderRoutes = [
+    '/order',
+    // Add any other order-related routes here
+  ];
+  
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+  
+  // Check if current route is a theme route
+  const isThemeRoute = themeRoutes.some(route => 
+    pathname?.startsWith(route)
+  );
+  
+  // Check if current route is an order route
+  const isOrderRoute = orderRoutes.some(route => 
     pathname?.startsWith(route)
   );
 
-  if (shouldApplyTheme) {
+  if (!mounted) {
+    return <div className="light">{children}</div>;
+  }
+
+  // For order routes, force light mode without theme provider
+  if (isOrderRoute) {
+    return <div className="light">{children}</div>;
+  }
+
+  // For theme routes, use ThemeProvider
+  if (isThemeRoute) {
     return (
       <ThemeProvider 
         attribute="class" 
@@ -35,6 +63,6 @@ export default function ThemeWrapper({ children }) {
     );
   }
 
-  // For non-theme routes, render children without theme provider
-  return <>{children}</>;
+  // For any other routes, default to light mode
+  return <div className="light">{children}</div>;
 }

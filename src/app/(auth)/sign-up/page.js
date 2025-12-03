@@ -208,7 +208,7 @@ export default function SignUpPage() {
       control={form.control}
       render={({ field }) => (
         <FormItem className="flex flex-col">
-          <FormLabel>{label}</FormLabel>
+          <FormLabel className="text-foreground">{label}</FormLabel>
           <Popover>
             <PopoverTrigger asChild>
               <FormControl>
@@ -249,7 +249,7 @@ export default function SignUpPage() {
 
   return (
     <div className="flex justify-center items-center min-h-screen bg-background text-foreground">
-      <div className="w-[95%] max-w-xl py-8 px-6 md:p-8 space-y-8 bg-white rounded-lg shadow-md my-2 md:my-6 border border-gray-200">
+      <div className="w-[95%] max-w-xl py-8 px-6 md:p-8 space-y-8 bg-card rounded-lg shadow-md my-2 md:my-6 border">
         <div className="text-center relative h-20 mb-6">
           {" "}
           {/* Added relative positioning and fixed height */}
@@ -267,21 +267,21 @@ export default function SignUpPage() {
                 e.target.nextSibling.style.display = "flex";
               }}
             />
-            <div className="hidden size-8 items-center justify-center text-gray-700 font-bold text-lg">
+            <div className="hidden size-8 items-center justify-center text-foreground font-bold text-lg">
               ☕
             </div>
 
             {/* Text Container */}
             <h1
               ref={textRef}
-              className="text-4xl font-extrabold tracking-tight lg:text-5xl w-max text-gray-900 absolute"
+              className="text-4xl font-extrabold tracking-tight lg:text-5xl w-max text-foreground absolute"
             >
               Cafe Order System
             </h1>
           </div>
           </div>
 
-        <p className="mb-4 text-gray-600 text-center">
+        <p className="mb-4 text-muted-foreground text-center">
           Sign-up to start your cafe order system
         </p>
 
@@ -293,7 +293,7 @@ export default function SignUpPage() {
               control={form.control}
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Name</FormLabel>
+                  <FormLabel className="text-foreground">Name</FormLabel>
                   <FormControl>
                     <Input placeholder="name" {...field} />
                   </FormControl>
@@ -308,7 +308,7 @@ export default function SignUpPage() {
               control={form.control}
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Email</FormLabel>
+                  <FormLabel className="text-foreground">Email</FormLabel>
                   <FormControl>
                     <Input placeholder="email" {...field} />
                   </FormControl>
@@ -323,7 +323,7 @@ export default function SignUpPage() {
               control={form.control}
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Password</FormLabel>
+                  <FormLabel className="text-foreground">Password</FormLabel>
                   <FormControl>
                     <Input type="password" placeholder="password" {...field} />
                   </FormControl>
@@ -340,7 +340,7 @@ export default function SignUpPage() {
                   control={form.control}
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Phone</FormLabel>
+                      <FormLabel className="text-foreground">Phone</FormLabel>
                       <FormControl>
                         <Input placeholder="phone" {...field} />
                       </FormControl>
@@ -355,7 +355,7 @@ export default function SignUpPage() {
                   control={form.control}
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Cafe Name</FormLabel>
+                      <FormLabel className="text-foreground">Cafe Name</FormLabel>
                       <FormControl>
                         <Input placeholder="cafe name" {...field} />
                       </FormControl>
@@ -372,7 +372,7 @@ export default function SignUpPage() {
               control={form.control}
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Address</FormLabel>
+                  <FormLabel className="text-foreground">Address</FormLabel>
                   <FormControl>
                     <Input placeholder="address" {...field} />
                   </FormControl>
@@ -387,7 +387,7 @@ export default function SignUpPage() {
               control={form.control}
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Pincode</FormLabel>
+                  <FormLabel className="text-foreground">Pincode</FormLabel>
                   <FormControl>
                     <Input
                       placeholder="Enter 6-digit Pincode"

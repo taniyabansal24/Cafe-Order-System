@@ -135,7 +135,7 @@ export default function SignInPage() {
 
   return (
     <div className="flex justify-center items-center min-h-screen bg-background text-foreground">
-      <div className="w-[95%] max-w-xl py-8 px-6 md:p-8 space-y-8 bg-white rounded-lg shadow-md my-2 md:my-6 border border-gray-200">
+      <div className="w-[95%] max-w-xl py-8 px-6 md:p-8 space-y-8 bg-card rounded-lg shadow-md my-2 md:my-6 border">
         <div className="text-center relative h-20 mb-6">
           {" "}
           {/* Added relative positioning and fixed height */}
@@ -153,7 +153,7 @@ export default function SignInPage() {
                 e.target.nextSibling.style.display = "flex";
               }}
             />
-            <div className="hidden size-8 items-center justify-center text-gray-700 font-bold text-lg">
+            <div className="hidden size-8 items-center justify-center text-foreground font-bold text-lg">
               ☕
             </div>
 
@@ -161,13 +161,13 @@ export default function SignInPage() {
 
             <h1
               ref={textRef}
-              className="text-4xl font-extrabold tracking-tight lg:text-5xl text-gray-900 leading-tight w-max"
+              className="text-4xl font-extrabold tracking-tight lg:text-5xl text-foreground leading-tight w-max"
             >
               Cafe Order System
             </h1>
           </div>
         </div>
-        <p className="mb-4 text-gray-600 text-center">Sign in to continue</p>
+        <p className="mb-4 text-muted-foreground text-center">Sign in to continue</p>
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -177,7 +177,7 @@ export default function SignInPage() {
               control={form.control}
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Email</FormLabel>
+                  <FormLabel className="text-foreground">Email</FormLabel>
                   <FormControl>
                     <Input
                       type="email"
@@ -197,7 +197,7 @@ export default function SignInPage() {
               control={form.control}
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Password</FormLabel>
+                  <FormLabel className="text-foreground">Password</FormLabel>
                   <FormControl>
                     <Input
                       type="password"
@@ -247,4 +247,4 @@ export default function SignInPage() {
       </div>
     </div>
   );
-} 
+}
