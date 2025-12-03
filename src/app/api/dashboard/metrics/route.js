@@ -1,55 +1,107 @@
-// app/api/dashboard/metrics/route.js
 import { NextResponse } from 'next/server';
+import { getServerSession } from "next-auth";
 import dbConnect from '@/lib/dbConnect';
 import OrderModel from '@/model/Order';
+import mongoose from 'mongoose';
+import { authOptions } from '../../auth/[...nextauth]/options';
 
 export async function GET() {
   try {
+    const session = await getServerSession(authOptions);
+
+    if (!session) {
+      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    }
+
+    const userId = session.user?._id;
+
+    if (!userId) {
+      console.error("❌ No user _id found in session.user:", session.user);
+      return NextResponse.json({
+        message: "User ID not found in session",
+        sessionUser: session.user
+      }, { status: 400 });
+    }
+
     await dbConnect();
+
+    // Convert string ID → ObjectId
+    let ownerId;
+    try {
+      ownerId = new mongoose.Types.ObjectId(userId);
+    } catch (error) {
+      console.error("❌ Invalid user ID format:", userId, error);
+      return NextResponse.json({
+        message: "Invalid user ID format",
+        userId: userId
+      }, { status: 400 });
+    }
 
     const now = new Date();
 
-    // --- Daily Sales (completed orders only) ---
-    const startOfDay = new Date(now);
-    startOfDay.setHours(0, 0, 0, 0);
+    // --- GET ALL COMPLETED ORDERS ---
+    const allCompletedOrders = await OrderModel.find({
+      owner: ownerId,
+      status: "completed"
+    })
+      .select("total createdAt")
+      .sort({ createdAt: -1 });
+
+    // --- DAILY SALES ---
+    const startOfDay = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+    const endOfDay = new Date(startOfDay);
+    endOfDay.setUTCDate(endOfDay.getUTCDate() + 1);
 
     const dailyResult = await OrderModel.aggregate([
-      { $match: { status: "completed", createdAt: { $gte: startOfDay } } },
-      { $group: { _id: null, total: { $sum: "$total" } } },
+      {
+        $match: {
+          owner: ownerId,
+          status: "completed",
+          createdAt: { $gte: startOfDay, $lt: endOfDay }
+        }
+      },
+      { $group: { _id: null, total: { $sum: "$total" } } }
     ]);
-    // Remove the division by 100 - the frontend will format it
+
     const dailySales = dailyResult[0]?.total || 0;
 
-    // --- Monthly Sales (completed orders only) ---
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    // --- MONTHLY SALES ---
+    const startOfMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+    const endOfMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
+
     const monthlyResult = await OrderModel.aggregate([
-      { $match: { status: "completed", createdAt: { $gte: startOfMonth } } },
-      { $group: { _id: null, total: { $sum: "$total" } } },
+      {
+        $match: {
+          owner: ownerId,
+          status: "completed",
+          createdAt: { $gte: startOfMonth, $lt: endOfMonth }
+        }
+      },
+      { $group: { _id: null, total: { $sum: "$total" } } }
     ]);
-    // Remove the division by 100 - the frontend will format it
+
     const monthlySales = monthlyResult[0]?.total || 0;
 
-    // --- Get ALL completed orders for debugging ---
-    const allCompletedOrders = await OrderModel.find({
-      status: "completed"
-    }).select('total createdAt items');
-
-    // --- Active Orders ---
+    // --- ACTIVE ORDERS ---
     const activeOrders = await OrderModel.countDocuments({
-      status: { $in: ["pending", "preparing"] },
+      owner: ownerId,
+      status: { $in: ["pending", "preparing"] }
     });
 
-    // --- Top-Selling Item (from all orders, not just completed) ---
+    // --- TOP SELLING ITEM ---
     const topItemResult = await OrderModel.aggregate([
+      { $match: { owner: ownerId } },
       { $unwind: "$items" },
       { $group: { _id: "$items.name", quantity: { $sum: "$items.quantity" } } },
       { $sort: { quantity: -1 } },
-      { $limit: 1 },
+      { $limit: 1 }
     ]);
+
     const topItem = topItemResult[0] || { _id: "-", quantity: 0 };
 
-    // --- Debug info: Count orders by status ---
+    // --- ORDERS BY STATUS ---
     const ordersByStatus = await OrderModel.aggregate([
+      { $match: { owner: ownerId } },
       { $group: { _id: "$status", count: { $sum: 1 } } }
     ]);
 
@@ -58,21 +110,24 @@ export async function GET() {
       monthlySales,
       activeOrders,
       topItem: { name: topItem._id, quantity: topItem.quantity },
-      debug: { 
+      debug: {
         ordersByStatus,
         allCompletedOrdersCount: allCompletedOrders.length,
-        completedOrders: allCompletedOrders.map(order => ({
-          total: order.total,
-          totalInPaise: order.total, // Store as paise
-          createdAt: order.createdAt,
-          items: order.items
-        }))
+        ownerId: userId,
+        dateInfo: {
+          currentDate: now.toISOString(),
+          startOfDay: startOfDay.toISOString(),
+          endOfDay: endOfDay.toISOString(),
+          startOfMonth: startOfMonth.toISOString(),
+          endOfMonth: endOfMonth.toISOString()
+        }
       }
     });
+
   } catch (error) {
-    console.error('Metrics API Error:', error);
+    console.error("❌ Metrics API Error:", error);
     return NextResponse.json(
-      { message: "Server Error" },
+      { message: "Server Error", error: error.message },
       { status: 500 }
     );
   }

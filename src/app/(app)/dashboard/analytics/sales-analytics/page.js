@@ -158,6 +158,76 @@ export default function SalesAnalytics() {
     );
   }
 
+  // Check if there's actual data or just empty structure
+  const hasActualData = salesData && (
+    salesData.orders.total > 0 || 
+    salesData.revenue.monthly.currentMonth > 0 ||
+    salesData.products.topSelling.allTime.length > 0
+  );
+
+  if (!hasActualData && !useMockData) {
+    return (
+      <div className="container mx-auto py-6 px-6 space-y-6">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Sales Analytics</h1>
+            <p className="text-muted-foreground">
+              Detailed breakdown of revenue, orders, and product performance
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <Button 
+              variant={timeRange === 'week' ? 'default' : 'outline'} 
+              size="sm"
+              onClick={() => setTimeRange('week')}
+            >
+              Weekly
+            </Button>
+            <Button 
+              variant={timeRange === 'month' ? 'default' : 'outline'} 
+              size="sm"
+              onClick={() => setTimeRange('month')}
+            >
+              Monthly
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={fetchSalesData}
+              disabled={loading}
+            >
+              <RefreshCw className={`h-4 w-4 mr-1 ${loading ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+          </div>
+        </div>
+
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <div className="text-center space-y-4">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-muted">
+                <AlertTriangle className="h-8 w-8 text-muted-foreground" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold">No Sales Data Yet</h3>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Start by completing some orders to see your sales analytics here.
+                </p>
+              </div>
+              <Button 
+                variant="outline" 
+                onClick={() => window.location.href = '/menu'}
+                className="mt-4"
+              >
+                Go to Menu
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   // Prepare chart data
   const monthlyRevenueData = {
     labels: salesData.revenue.monthly.labels,

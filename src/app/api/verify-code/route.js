@@ -1,31 +1,32 @@
-// /api/verify-code/route.js
+// app/api/verify-code/route.js
 import dbConnect from "@/lib/dbConnect";
 import OwnerModel from "@/model/Owner";
+import twilio from "twilio";
+
+const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
 
 export async function POST(request) {
   await dbConnect();
 
   try {
     const { email, code } = await request.json();
-    console.log("Verification request received - Email:", email, "Code:", code);
+    console.log("Email verification request - Email:", email, "Code:", code);
 
     const normalizedEmail = email.trim().toLowerCase();
-    const user = await OwnerModel.findOne({ email: normalizedEmail });
+    const user = await OwnerModel.findOne({ 
+      email: normalizedEmail,
+      registrationStep: 'email-verification'
+    });
 
     if (!user) {
-      console.error("User not found for email:", normalizedEmail);
+      console.error("User not found or wrong registration step:", normalizedEmail);
       return Response.json(
-        { success: false, message: "Owner not found. Please sign up again." },
+        { success: false, message: "No pending email verification found. Please sign up again." },
         { status: 400 }
       );
     }
 
-    console.log(
-      "User found. Stored verifyCode:",
-      user.verifyCode,
-      "Expiry:",
-      user.verifyCodeExpiry
-    );
+    console.log("User found. Stored verifyCode:", user.verifyCode, "Expiry:", user.verifyCodeExpiry);
 
     // Check if code exists
     if (!user.verifyCode) {
@@ -61,49 +62,62 @@ export async function POST(request) {
       );
     }
 
-    // Check if already verified
-    if (user.isVerified) {
-      return Response.json(
-        { success: false, message: "Account is already verified" },
-        { status: 400 }
-      );
-    }
+    // ✅ Your added verification update + logging section starts here
+    // In your app/api/verify-code/route.js - Check the update part
+    // Update user - mark email as verified and move to phone verification
+    user.isVerified = true;
+    user.registrationStep = 'phone-verification';
+    user.verifyCode = undefined;
+    user.verifyCodeExpiry = undefined;
 
-    // Validate code
-    if (user.verifyCode !== code) {
-      return Response.json(
-        { success: false, message: "Invalid verification code" },
-        { status: 400 }
-      );
-    }
-
-    // Check expiry
-    if (new Date() > user.verifyCodeExpiry) {
-      return Response.json(
-        { success: false, message: "Verification code has expired" },
-        { status: 400 }
-      );
-    }
-
-    // Update user
-    user.set({
-      isVerified: true,
+    console.log("✅ Email verification successful, updating user:", {
+      userId: user._id,
+      newRegistrationStep: 'phone-verification',
+      isVerified: true
     });
-    user.set("verifyCode", undefined, { strict: false });
-    user.set("verifyCodeExpiry", undefined, { strict: false });
+
     await user.save();
 
-    console.log("User verified successfully");
+    // Verify the update worked
+    const updatedUser = await OwnerModel.findById(user._id);
+    console.log("✅ User after email verification update:", {
+      registrationStep: updatedUser.registrationStep,
+      isVerified: updatedUser.isVerified
+    });
+    // ✅ Your added section ends here
 
-    return Response.json(
-      { success: true, message: "Account verified successfully!" },
-      { status: 200 }
-    );
+    console.log("Email verified successfully, sending phone OTP...");
+
+    // Send phone OTP using Twilio
+    try {
+      const verification = await client.verify
+        .v2.services(process.env.TWILIO_SERVICE_ID)
+        .verifications.create({
+          to: user.phone.startsWith("+91") ? user.phone : `+91${user.phone}`,
+          channel: "sms",
+        });
+
+      return Response.json({
+        success: true,
+        message: "Email verified successfully. Phone OTP sent.",
+        registrationId: user._id.toString(),
+        nextStep: 'verify-phone'
+      });
+
+    } catch (twilioError) {
+      console.error("Twilio error:", twilioError.message);
+      // Even if Twilio fails, mark email as verified but indicate phone OTP failed
+      return Response.json({
+        success: true,
+        message: "Email verified but failed to send phone OTP. Please try again.",
+        registrationId: user._id.toString(),
+        nextStep: 'verify-phone',
+        phoneOTPSent: false
+      });
+    }
+
   } catch (error) {
     console.error("FULL ERROR DETAILS:", error);
-    if (error.name === "MongoError") {
-      console.error("MongoDB Error Details:", error.message, error.code);
-    }
     return Response.json(
       {
         success: false,

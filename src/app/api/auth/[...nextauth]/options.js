@@ -1,3 +1,4 @@
+// app/api/auth/[...nextauth]/options.js
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import OwnerModel from "@/model/Owner";
@@ -13,42 +14,84 @@ export const authOptions = {
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        await dbConnect();
-
         try {
-          const user = await OwnerModel.findOne({ email: credentials.email });
+          console.log("🔄 NextAuth authorize called");
+
+          await dbConnect();
+
+          if (!credentials.email || !credentials.password) {
+            console.error("❌ Missing credentials");
+            return null;
+          }
+
+          // Test bcrypt first
+          const testMatch = await bcrypt.compare("test", "$2b$12$invalidhash");
+          console.log("🔐 NextAuth bcrypt test (should be false):", testMatch);
+
+          // Find user
+          const user = await OwnerModel.findOne({ 
+            email: credentials.email.toLowerCase().trim()
+          });
 
           if (!user) {
-            throw new Error("No user found with this email");
+            console.error("❌ User not found:", credentials.email);
+            return null;
           }
 
-          if (!user.isVerified) {
-            throw new Error("Please verify your account before login");
+          console.log("🔍 User found:", {
+            email: user.email,
+            isVerified: user.isVerified,
+            isPhoneVerified: user.isPhoneVerified,
+            registrationStep: user.registrationStep,
+            hashExists: !!user.password,
+            hashLength: user.password?.length
+          });
+
+          // Check verification
+          if (!user.isVerified || !user.isPhoneVerified || user.registrationStep !== 'completed') {
+            console.error("❌ User not fully verified");
+            return null;
           }
 
+          console.log("🔐 Starting password comparison...");
+          console.log("🔐 Password details:", {
+            providedLength: credentials.password.length,
+            storedHashLength: user.password.length,
+            storedHashPrefix: user.password.substring(0, 20)
+          });
+
+          // Compare password
           const isPasswordCorrect = await bcrypt.compare(
             credentials.password,
             user.password
           );
 
-          if (isPasswordCorrect) {
-            return {
-              id: user._id.toString(),
-              email: user.email,
-              name: user.name,
-              isVerified: user.isVerified,
-              cafeName: user.cafeName,
-              address: user.address,
-              phone: user.phone,
-              city: user.city,
-              state: user.state,
-              pincode: user.pincode
-            };
-          } else {
-            throw new Error("Incorrect Password");
+          console.log("🔐 Password comparison result:", isPasswordCorrect);
+
+          if (!isPasswordCorrect) {
+            console.error("❌ Password incorrect");
+            return null;
           }
+
+          console.log("✅ Authentication successful");
+
+          return {
+            id: user._id.toString(),
+            email: user.email,
+            name: user.name,
+            isVerified: user.isVerified,
+            isPhoneVerified: user.isPhoneVerified,
+            cafeName: user.cafeName,
+            address: user.address,
+            phone: user.phone,
+            city: user.city,
+            state: user.state,
+            pincode: user.pincode
+          };
+
         } catch (error) {
-          throw new Error(error.message);
+          console.error("❌ NextAuth authorize error:", error);
+          return null;
         }
       },
     }),
@@ -58,6 +101,7 @@ export const authOptions = {
       if (user) {
         token._id = user.id;
         token.isVerified = user.isVerified;
+        token.isPhoneVerified = user.isPhoneVerified;
         token.name = user.name;
         token.cafeName = user.cafeName;
         token.address = user.address;
@@ -71,7 +115,9 @@ export const authOptions = {
     async session({ session, token }) {
       if (token) {
         session.user._id = token._id;
+        session.user.id = token.id;
         session.user.isVerified = token.isVerified;
+        session.user.isPhoneVerified = token.isPhoneVerified;
         session.user.name = token.name;
         session.user.cafeName = token.cafeName;
         session.user.address = token.address;

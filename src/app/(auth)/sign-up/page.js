@@ -2,7 +2,7 @@
 
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useEffect, useState, useRef } from "react"; // Combined imports
+import { useEffect, useState, useRef } from "react";
 import { gsap } from "gsap";
 import * as z from "zod";
 import axios from "axios";
@@ -180,12 +180,15 @@ export default function SignUpPage() {
 
       const res = await axios.post("/api/sign-up", formattedData);
 
-      toast.success(res.data.message);
-      router.replace(
-        `/verify?email=${encodeURIComponent(
-          data.email
-        )}&phone=${encodeURIComponent(formattedData.phone)}`
-      );
+      if (res.data.success) {
+        toast.success("Email OTP sent successfully!");
+        // Redirect to verify page with all necessary data
+        router.replace(
+          `/verify?email=${encodeURIComponent(data.email)}&phone=${encodeURIComponent(formattedData.phone)}&registrationId=${res.data.registrationId}`
+        );
+      } else {
+        toast.error(res.data.message);
+      }
     } catch (err) {
       toast.error(err.response?.data?.message || "Signup failed");
     } finally {

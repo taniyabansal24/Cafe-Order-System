@@ -54,45 +54,28 @@ ChartJS.register(
   Legend
 );
 
-// Mock data for fallback
+// Mock data for fallback - updated to match API structure
 const mockCustomerData = {
-  totalCustomers: 1248,
-  newCustomers: 42,
-  returningCustomers: 286,
-  repeatRate: 68,
-  avgOrderValue: 1250,
-  avgOrdersPerCustomer: 3.2,
-  sameOrderPercentage: 45,
+  totalCustomers: 0,
+  newCustomers: 0,
+  returningCustomers: 0,
+  repeatRate: 0,
+  avgOrderValue: 0,
+  avgOrdersPerCustomer: 0,
+  sameOrderPercentage: 0,
   customerGrowth: {
-    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-    data: [850, 920, 1020, 1100, 1150, 1248]
+    labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+    data: [0, 0, 0, 0]
   },
-  topSpenders: [
-    { name: 'Rajesh Kumar', totalSpent: 18500, orderCount: 14 },
-    { name: 'Priya Sharma', totalSpent: 16200, orderCount: 12 },
-    { name: 'Vikram Singh', totalSpent: 14350, orderCount: 11 },
-    { name: 'Anjali Patel', totalSpent: 13200, orderCount: 10 },
-    { name: 'Mohammed Khan', totalSpent: 11800, orderCount: 9 }
-  ],
-  topLoyalCustomers: [
-    { name: 'Sneha Gupta', orderCount: 18, lastOrder: '2 days ago' },
-    { name: 'Amit Verma', orderCount: 16, lastOrder: '5 days ago' },
-    { name: 'Neha Joshi', orderCount: 15, lastOrder: '1 week ago' },
-    { name: 'Rahul Desai', orderCount: 14, lastOrder: '3 days ago' },
-    { name: 'Divya Mehta', orderCount: 13, lastOrder: 'yesterday' }
-  ],
-  peakTimes: [
-    { range: '7:00-9:00 AM', orders: 125 },
-    { range: '12:00-2:00 PM', orders: 342 },
-    { range: '6:00-8:00 PM', orders: 287 }
-  ],
-  customerContacts: [
-    { name: 'Rajesh Kumar', phone: '+91 98765 43210', email: 'rajesh.k@example.com', orderCount: 14 },
-    { name: 'Priya Sharma', phone: '+91 97654 32109', email: 'priya.s@example.com', orderCount: 12 },
-    { name: 'Vikram Singh', phone: '+91 96543 21098', email: 'vikram.s@example.com', orderCount: 11 },
-    { name: 'Anjali Patel', phone: '+91 95432 10987', email: 'anjali.p@example.com', orderCount: 10 },
-    { name: 'Mohammed Khan', phone: '+91 94321 09876', email: 'mohammed.k@example.com', orderCount: 9 }
-  ]
+  topSpenders: [],
+  topLoyalCustomers: [],
+  peakTimes: [],
+  customerContacts: [],
+  favoriteItems: [],
+  metadata: {
+    hasData: false,
+    message: "Using demo data"
+  }
 };
 
 export default function CustomerInsights() {
@@ -138,12 +121,61 @@ export default function CustomerInsights() {
     );
   }
 
-  // Prepare data for charts
+  // Check if there's actual data
+  const hasActualData = customerData && (
+    customerData.totalCustomers > 0 || 
+    (customerData.topSpenders && customerData.topSpenders.length > 0) ||
+    (customerData.metadata && customerData.metadata.hasData === true)
+  );
+
+  if (!loading && !hasActualData && !useMockData) {
+    return (
+      <div className="container mx-auto py-6 px-6 space-y-6">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Customer Insights</h1>
+            <p className="text-muted-foreground">
+              Analyze customer behavior and loyalty patterns
+            </p>
+          </div>
+        </div>
+
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <div className="text-center space-y-4">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-muted">
+                <Users className="h-8 w-8 text-muted-foreground" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold">No Customer Data Yet</h3>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Start by receiving orders from customers to see insights here.
+                </p>
+              </div>
+              <div className="text-sm text-muted-foreground mt-4">
+                <p>Customer insights will appear when you have:</p>
+                <ul className="list-disc list-inside mt-2 space-y-1">
+                  <li>Orders with customer information</li>
+                  <li>Multiple orders from the same customers</li>
+                  <li>Different customer ordering patterns</li>
+                </ul>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Prepare data for charts - with safety checks
   const newVsReturningData = {
     labels: ['New Customers', 'Returning Customers'],
     datasets: [
       {
-        data: [customerData.newCustomers, customerData.returningCustomers],
+        data: [
+          customerData.newCustomers || 0,
+          customerData.returningCustomers || 0
+        ],
         backgroundColor: ['#FF6384', '#36A2EB'],
         hoverBackgroundColor: ['#FF6384', '#36A2EB'],
       },
@@ -151,11 +183,11 @@ export default function CustomerInsights() {
   };
 
   const customerGrowthData = {
-    labels: customerData.customerGrowth.labels,
+    labels: customerData.customerGrowth?.labels || ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
     datasets: [
       {
         label: 'Total Customers',
-        data: customerData.customerGrowth.data,
+        data: customerData.customerGrowth?.data || [0, 0, 0, 0],
         fill: false,
         backgroundColor: 'rgba(136, 84, 208, 0.4)',
         borderColor: 'rgba(136, 84, 208, 1)',
@@ -165,11 +197,11 @@ export default function CustomerInsights() {
   };
 
   const topSpendersData = {
-    labels: customerData.topSpenders.slice(0, 10).map(c => c.name || 'Unknown'),
+    labels: (customerData.topSpenders || []).slice(0, 10).map(c => c.name || 'Unknown'),
     datasets: [
       {
         label: 'Total Spending (₹)',
-        data: customerData.topSpenders.slice(0, 10).map(c => c.totalSpent),
+        data: (customerData.topSpenders || []).slice(0, 10).map(c => c.totalSpent || 0),
         backgroundColor: 'rgba(153, 102, 255, 0.6)',
       },
     ],
@@ -316,17 +348,23 @@ export default function CustomerInsights() {
               </CardHeader>
               <CardContent className="pl-2">
                 <div className="h-80">
-                  <Line 
-                    data={customerGrowthData}
-                    options={{
-                      maintainAspectRatio: false,
-                      scales: {
-                        y: {
-                          beginAtZero: true
+                  {customerData.customerGrowth?.data?.some(value => value > 0) ? (
+                    <Line 
+                      data={customerGrowthData}
+                      options={{
+                        maintainAspectRatio: false,
+                        scales: {
+                          y: {
+                            beginAtZero: true
+                          }
                         }
-                      }
-                    }}
-                  />
+                      }}
+                    />
+                  ) : (
+                    <div className="flex items-center justify-center h-full text-muted-foreground">
+                      No customer growth data available
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>

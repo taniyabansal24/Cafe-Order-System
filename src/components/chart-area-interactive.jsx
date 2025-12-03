@@ -4,6 +4,7 @@ import * as React from "react";
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import axios from "axios";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useSession } from "next-auth/react"; // 👈 Add this import
 import {
   Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle,
 } from "@/components/ui/card";
@@ -25,6 +26,7 @@ const chartConfig = {
 
 export function ChartAreaInteractive() {
   const isMobile = useIsMobile();
+  const { data: session } = useSession(); // 👈 Get session
   const [timeRange, setTimeRange] = React.useState("90d");
   const [chartData, setChartData] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
@@ -37,19 +39,30 @@ export function ChartAreaInteractive() {
     const fetchData = async () => {
       try {
         setLoading(true);
+        console.log("🔄 Fetching chart data for user:", session?.user?.id);
         const res = await axios.get("/api/dashboard/chart");
+        console.log("📈 Chart data received:", res.data);
         setChartData(res.data);
       } catch (err) {
-        console.error("Chart API error:", err);
+        console.error("❌ Chart API error:", err);
+        setChartData([]); // Set empty array on error
       } finally {
         setLoading(false);
       }
     };
-    fetchData();
-  }, []);
+
+    // Only fetch if we have a session
+    if (session) {
+      fetchData();
+    }
+  }, [session]); // 👈 Refetch when session changes
 
   const filteredData = React.useMemo(() => {
-    if (!chartData.length) return [];
+    if (!chartData.length) {
+      console.log("📊 No chart data available");
+      return [];
+    }
+    
     const referenceDate = new Date();
     let daysToSubtract = 90;
     if (timeRange === "30d") daysToSubtract = 30;
@@ -58,7 +71,10 @@ export function ChartAreaInteractive() {
     const startDate = new Date();
     startDate.setDate(referenceDate.getDate() - daysToSubtract);
 
-    return chartData.filter(item => new Date(item.date) >= startDate);
+    const filtered = chartData.filter(item => new Date(item.date) >= startDate);
+    console.log("📊 Filtered data for time range:", timeRange, filtered);
+    
+    return filtered;
   }, [chartData, timeRange]);
 
   // Format currency in Indian Rupees
@@ -86,11 +102,30 @@ export function ChartAreaInteractive() {
       <Card className="@container/card">
         <CardHeader>
           <CardTitle>Sales Overview</CardTitle>
-          <CardDescription>Track revenue and orders over time</CardDescription>
+          <CardDescription>Loading your sales data...</CardDescription>
         </CardHeader>
         <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
           <div className="h-[250px] w-full flex items-center justify-center">
             <div className="text-muted-foreground">Loading chart data...</div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!chartData.length) {
+    return (
+      <Card className="@container/card">
+        <CardHeader>
+          <CardTitle>Sales Overview</CardTitle>
+          <CardDescription>No sales data available yet</CardDescription>
+        </CardHeader>
+        <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
+          <div className="h-[250px] w-full flex items-center justify-center">
+            <div className="text-muted-foreground text-center">
+              <p>No sales data found for your restaurant.</p>
+              <p className="text-sm">Complete orders will appear here.</p>
+            </div>
           </div>
         </CardContent>
       </Card>

@@ -2,20 +2,58 @@ import dbConnect from '@/lib/dbConnect';
 import MenuItemModel from '@/model/MenuItem';
 import OrderModel from '@/model/Order';
 import { NextResponse } from 'next/server';
-
+import { getServerSession } from "next-auth";
+import mongoose from 'mongoose';
+import { authOptions } from '../../auth/[...nextauth]/options';
 
 export async function GET(request) {
   try {
+    // Get session to identify the owner
+    const session = await getServerSession(authOptions);
+    
+    if (!session) {
+      return NextResponse.json({ 
+        success: false, 
+        error: "Unauthorized" 
+      }, { status: 401 });
+    }
+
+    // Get owner ID from session
+    const userId = session.user?._id;
+    
+    if (!userId) {
+      return NextResponse.json({ 
+        success: false, 
+        error: "User ID not found in session" 
+      }, { status: 400 });
+    }
+
     await dbConnect();
+
+    // Convert to ObjectId
+    const ownerId = new mongoose.Types.ObjectId(userId);
     
     const { searchParams } = new URL(request.url);
     const range = searchParams.get('range') || 'month';
     
-    // Get all orders
-    const orders = await OrderModel.find({}).sort({ createdAt: 1 });
+    console.log("📊 Analytics API - Fetching data for owner:", ownerId);
     
-    // Get all menu items for categorization
-    const menuItems = await MenuItemModel.find({});
+    // Get owner's orders and menu items
+    const orders = await OrderModel.find({ owner: ownerId }).sort({ createdAt: 1 });
+    const menuItems = await MenuItemModel.find({ owner: ownerId });
+    
+    console.log("📊 Analytics API - Found orders:", orders.length);
+    console.log("📊 Analytics API - Found menu items:", menuItems.length);
+    
+    if (orders.length === 0) {
+      // Return empty structure with some default values
+      const emptyAnalyticsData = getEmptyAnalyticsData();
+      return NextResponse.json({
+        success: true,
+        data: emptyAnalyticsData,
+        message: "No data found for this owner"
+      });
+    }
     
     // Process data for analytics
     const analyticsData = processAnalyticsData(orders, menuItems, range);
@@ -26,12 +64,73 @@ export async function GET(request) {
     });
     
   } catch (error) {
-    console.error('Error fetching sales analytics:', error);
+    console.error('❌ Error fetching sales analytics:', error);
     return NextResponse.json(
       { success: false, error: error.message },
       { status: 500 }
     );
   }
+}
+
+// Helper function for empty data
+function getEmptyAnalyticsData() {
+  const currentMonth = new Date().toLocaleString('default', { month: 'short' }) + ' ' + new Date().getFullYear();
+  const weekNumber = getWeekNumber(new Date());
+  const currentWeek = `Week ${weekNumber}, ${new Date().getFullYear()}`;
+  
+  return {
+    revenue: {
+      monthly: {
+        labels: [currentMonth],
+        data: [0],
+        currentMonth: 0,
+        previousMonth: 0,
+        growth: 0
+      },
+      weekly: {
+        labels: [currentWeek],
+        data: [0],
+        currentWeek: 0,
+        previousWeek: 0,
+        growth: 0
+      }
+    },
+    orders: {
+      total: 0,
+      completed: 0,
+      canceled: 0,
+      avgOrderValue: 0,
+      daily: {
+        labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+        data: [0, 0, 0, 0, 0, 0, 0]
+      },
+      weekly: {
+        labels: [currentWeek],
+        data: [0]
+      },
+      distribution: {
+        completed: 0,
+        canceled: 0
+      }
+    },
+    products: {
+      topSelling: {
+        allTime: [],
+        lastMonth: [],
+        lastWeek: []
+      },
+      weeklyComparison: {
+        currentWeek: [],
+        previousWeek: []
+      },
+      lowSelling: [],
+      categories: {
+        drinks: 0,
+        snacks: 0,
+        meals: 0
+      }
+    }
+  };
 }
 
 function processAnalyticsData(orders, menuItems, range) {
@@ -92,9 +191,11 @@ function calculateMonthlyRevenue(orders) {
   const monthlyGrowth = previousMonthRevenue ? 
     ((currentMonthRevenue - previousMonthRevenue) / previousMonthRevenue * 100) : 0;
   
+  // Limit to last 6 months for better display
+  const recentMonths = 6;
   return {
-    labels: monthlyLabels,
-    data: monthlyRevenue,
+    labels: monthlyLabels.slice(-recentMonths),
+    data: monthlyRevenue.slice(-recentMonths),
     currentMonth: currentMonthRevenue,
     previousMonth: previousMonthRevenue,
     growth: monthlyGrowth
@@ -141,8 +242,9 @@ function calculateWeeklyRevenue(orders) {
   const weeklyGrowth = previousWeekRevenue ? 
     ((currentWeekRevenue - previousWeekRevenue) / previousWeekRevenue * 100) : 0;
   
+  // Last 8 weeks
   return {
-    labels: weeklyLabels.slice(-8), // Last 8 weeks
+    labels: weeklyLabels.slice(-8),
     data: weeklyRevenue.slice(-8),
     currentWeek: currentWeekRevenue,
     previousWeek: previousWeekRevenue,
@@ -156,17 +258,19 @@ function calculateProductAnalytics(orders, menuItems) {
   // Calculate product sales
   orders.forEach(order => {
     order.items.forEach(item => {
-      if (!productSales[item.menuItemId]) {
-        productSales[item.menuItemId] = {
+      const productId = item.menuItemId?.toString() || item.name;
+      if (!productSales[productId]) {
+        productSales[productId] = {
+          id: productId,
           name: item.name,
           sales: 0,
           revenue: 0,
           quantity: 0
         };
       }
-      productSales[item.menuItemId].sales += item.quantity;
-      productSales[item.menuItemId].revenue += item.price * item.quantity;
-      productSales[item.menuItemId].quantity += item.quantity;
+      productSales[productId].sales += item.quantity;
+      productSales[productId].revenue += item.price * item.quantity;
+      productSales[productId].quantity += item.quantity;
     });
   });
   
@@ -235,15 +339,16 @@ function calculateTopSellingForPeriod(orders) {
   
   orders.forEach(order => {
     order.items.forEach(item => {
-      if (!productSales[item.menuItemId]) {
-        productSales[item.menuItemId] = {
+      const productId = item.menuItemId?.toString() || item.name;
+      if (!productSales[productId]) {
+        productSales[productId] = {
           name: item.name,
           sales: 0,
           revenue: 0
         };
       }
-      productSales[item.menuItemId].sales += item.quantity;
-      productSales[item.menuItemId].revenue += item.price * item.quantity;
+      productSales[productId].sales += item.quantity;
+      productSales[productId].revenue += item.price * item.quantity;
     });
   });
   
@@ -253,26 +358,50 @@ function calculateTopSellingForPeriod(orders) {
 }
 
 function categorizeProducts(menuItems, productSales) {
-  // Simplified categorization based on product names
+  // Use actual categories from menu items if available
   const categories = {
     drinks: 0,
     snacks: 0,
-    meals: 0
+    meals: 0,
+    other: 0
   };
   
   let totalRevenue = 0;
   
+  // First, try to use menu item categories
+  const menuItemMap = {};
+  menuItems.forEach(item => {
+    menuItemMap[item._id.toString()] = item;
+  });
+  
   Object.values(productSales).forEach(product => {
     totalRevenue += product.revenue;
     
-    // Categorize based on product name keywords
-    const name = product.name.toLowerCase();
-    if (name.includes('coffee') || name.includes('tea') || name.includes('cappuccino') || name.includes('cold') || name.includes('drink')) {
-      categories.drinks += product.revenue;
-    } else if (name.includes('fries') || name.includes('nuggets') || name.includes('samosa') || name.includes('brownie') || name.includes('cheesecake') || name.includes('fries')) {
-      categories.snacks += product.revenue;
+    // Try to get category from menu item
+    const menuItem = menuItemMap[product.id];
+    if (menuItem && menuItem.category) {
+      const category = menuItem.category.toLowerCase();
+      if (category.includes('drink') || category.includes('beverage') || category.includes('coffee') || category.includes('tea')) {
+        categories.drinks += product.revenue;
+      } else if (category.includes('snack') || category.includes('appetizer') || category.includes('dessert')) {
+        categories.snacks += product.revenue;
+      } else if (category.includes('meal') || category.includes('main') || category.includes('entree') || category.includes('curry') || category.includes('rice') || category.includes('bread')) {
+        categories.meals += product.revenue;
+      } else {
+        categories.other += product.revenue;
+      }
     } else {
-      categories.meals += product.revenue;
+      // Fallback to name-based categorization
+      const name = product.name.toLowerCase();
+      if (name.includes('coffee') || name.includes('tea') || name.includes('cappuccino') || name.includes('cold') || name.includes('drink') || name.includes('juice') || name.includes('soda')) {
+        categories.drinks += product.revenue;
+      } else if (name.includes('fries') || name.includes('nuggets') || name.includes('samosa') || name.includes('brownie') || name.includes('cheesecake') || name.includes('fries') || name.includes('chips') || name.includes('snack')) {
+        categories.snacks += product.revenue;
+      } else if (name.includes('burger') || name.includes('pizza') || name.includes('pasta') || name.includes('rice') || name.includes('curry') || name.includes('sandwich') || name.includes('wrap') || name.includes('meal')) {
+        categories.meals += product.revenue;
+      } else {
+        categories.other += product.revenue;
+      }
     }
   });
   
@@ -281,6 +410,7 @@ function categorizeProducts(menuItems, productSales) {
     categories.drinks = Math.round((categories.drinks / totalRevenue) * 100);
     categories.snacks = Math.round((categories.snacks / totalRevenue) * 100);
     categories.meals = Math.round((categories.meals / totalRevenue) * 100);
+    categories.other = Math.round((categories.other / totalRevenue) * 100);
   }
   
   return categories;

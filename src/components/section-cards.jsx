@@ -9,30 +9,37 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
 import axios from "axios";
 
 export function SectionCards() {
+  const { data: session } = useSession();
   const [metrics, setMetrics] = useState({
     dailySales: 0,
-    monthlySales: 0,
+    monthlySales: 0,  // This should show 410 for December
     activeOrders: 0,
     topItem: { name: "-", quantity: 0 },
-    debug: { ordersByStatus: [], completedOrders: [] }
+    debug: { ordersByStatus: [] }
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    // Fetch data from backend API
     const fetchMetrics = async () => {
+      if (!session) {
+        setLoading(false);
+        return;
+      }
+
       try {
         setLoading(true);
+        console.log("🔄 Fetching metrics for user:", session.user._id);
         const res = await axios.get("/api/dashboard/metrics");
-        console.log("API Response:", res.data);
+        console.log("📊 Full API Response:", res.data);
         setMetrics(res.data);
         setError(null);
       } catch (err) {
-        console.error("Failed to fetch metrics:", err);
+        console.error("❌ Failed to fetch metrics:", err);
         setError("Failed to load dashboard data");
       } finally {
         setLoading(false);
@@ -40,17 +47,30 @@ export function SectionCards() {
     };
 
     fetchMetrics();
-  }, []);
+  }, [session]);
 
-  // Format currency in Indian Rupees
+  // Fixed currency formatting
   const formatINR = (amount) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(amount);
+    if (typeof amount !== 'number' || isNaN(amount)) {
+      return '₹0';
+    }
+    return `₹${amount.toLocaleString('en-IN')}`;
   };
+
+  // Calculate completed orders count
+  const completedOrdersCount = metrics.debug?.ordersByStatus?.find(status => status._id === 'completed')?.count || 0;
+  
+  // Check if there are sales
+  const hasSales = metrics.dailySales > 0 || metrics.monthlySales > 0;
+
+  // console.log("📊 SectionCards - Display metrics:", {
+  //   dailySales: metrics.dailySales,
+  //   monthlySales: metrics.monthlySales,
+  //   activeOrders: metrics.activeOrders,
+  //   topItem: metrics.topItem,
+  //   completedOrdersCount,
+  //   hasSales
+  // });
 
   if (loading) {
     return (
@@ -76,24 +96,33 @@ export function SectionCards() {
     );
   }
 
-  const hasCompletedOrders = metrics.debug?.completedOrders?.length > 0;
-  const hasSales = metrics.dailySales > 0 || metrics.monthlySales > 0;
-  const completedOrdersCount = metrics.debug?.ordersByStatus?.find(status => status._id === 'completed')?.count || 0;
+  if (error) {
+    return (
+      <div className="*:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card grid grid-cols-1 gap-4 px-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:shadow-xs lg:px-6 @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
+        <Card className="@container/card col-span-4">
+          <CardHeader>
+            <CardDescription>Error</CardDescription>
+            <CardTitle className="text-red-600">{error}</CardTitle>
+          </CardHeader>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="*:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card grid grid-cols-1 gap-4 px-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:shadow-xs lg:px-6 @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
       
-      {/* Total Revenue Card */}
+      {/* Current Month Revenue Card */}
       <Card className="@container/card">
         <CardHeader>
-          <CardDescription>Total Revenue</CardDescription>
-          {hasCompletedOrders && !hasSales && (
+          <CardDescription>Current Month Revenue</CardDescription>
+          {completedOrdersCount > 0 && !hasSales && (
             <div className="flex items-center text-amber-600 text-sm mb-2">
               <IconAlertCircle className="h-4 w-4 mr-1" />
-              Completed orders with ₹0 total
+              Check order totals in database
             </div>
           )}
-          {!hasCompletedOrders && (
+          {completedOrdersCount === 0 && (
             <div className="flex items-center text-amber-600 text-sm mb-2">
               <IconAlertCircle className="h-4 w-4 mr-1" />
               No completed orders yet
@@ -102,38 +131,23 @@ export function SectionCards() {
           <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
             {formatINR(metrics.monthlySales)}
           </CardTitle>
-          {/* <CardAction>
-            <Badge variant={hasSales ? "default" : "outline"}>
-              {hasSales ? (
-                <>
-                  <IconTrendingUp className="h-4 w-4 mr-1" />
-                  +12.5%
-                </>
-              ) : (
-                <>
-                  <IconAlertCircle className="h-4 w-4 mr-1" />
-                  0%
-                </>
-              )}
-            </Badge>
-          </CardAction> */}
         </CardHeader>
         <CardFooter className="flex-col items-start gap-1.5 text-sm">
           <div className="line-clamp-1 flex gap-2 font-medium">
-            {hasCompletedOrders ? `${completedOrdersCount} completed orders` : 'Revenue Overview'}
+            {completedOrdersCount > 0 ? `${completedOrdersCount} completed orders` : 'Revenue Overview'}
           </div>
           <div className="text-muted-foreground">
-            {hasCompletedOrders && !hasSales 
-              ? "Check order totals in database" 
+            {completedOrdersCount > 0 && !hasSales 
+              ? "Orders exist but revenue calculation issue" 
               : hasSales
-              ? "Monthly performance"
+              ? "December 2025 performance"
               : "Complete orders to see revenue"
             }
           </div>
         </CardFooter>
       </Card>
 
-      {/* Daily Revenue Card */}
+      {/* Today's Revenue Card */}
       <Card className="@container/card">
         <CardHeader>
           <CardDescription>Today's Revenue</CardDescription>
@@ -145,7 +159,7 @@ export function SectionCards() {
               {metrics.dailySales > 0 ? (
                 <>
                   <IconTrendingUp className="h-4 w-4 mr-1" />
-                  +5%
+                  Today
                 </>
               ) : (
                 "No sales today"
@@ -158,7 +172,7 @@ export function SectionCards() {
             Daily performance <IconTrendingUp className="size-4" />
           </div>
           <div className="text-muted-foreground">
-            Revenue generated today
+            Revenue generated on December 1, 2025
           </div>
         </CardFooter>
       </Card>
@@ -203,7 +217,7 @@ export function SectionCards() {
               {metrics.topItem.quantity > 0 ? (
                 <>
                   <IconTrendingUp className="h-4 w-4 mr-1" />
-                  Popular
+                  {metrics.topItem.quantity} sold
                 </>
               ) : (
                 "No sales yet"

@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useSession } from "next-auth/react";
 import {
   closestCenter,
   DndContext,
@@ -313,6 +314,7 @@ function DraggableRow({ row }) {
 }
 
 export function DataTable() {
+  const { data: session, status: sessionStatus } = useSession();
   const [data, setData] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState(null);
@@ -337,20 +339,44 @@ export function DataTable() {
   );
   const isMobile = useIsMobile();
 
-  // Fetch data from API
+  // Fetch data from API (owner-scoped)
   const fetchOrders = React.useCallback(async () => {
     try {
       setIsRefreshing(true);
-      const res = await fetch("/api/orders?status=all");
+
+      // If session is loading, don't fetch yet
+      if (sessionStatus === "loading") return;
+
+      // If user is not authenticated, show a helpful message
+      if (sessionStatus !== "authenticated") {
+        setError("Not authenticated");
+        setLoading(false);
+        setIsRefreshing(false);
+        return;
+      }
+
+      const res = await fetch("/api/orders?status=all", {
+        method: "GET",
+        credentials: "same-origin", // ensure cookies (next-auth) are sent
+      });
+
+      if (res.status === 401) {
+        setError("Not authenticated to fetch orders");
+        setLoading(false);
+        setIsRefreshing(false);
+        return;
+      }
+
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
       const json = await res.json();
 
       if (!json.success) {
-        throw new Error(json.error || "Failed to fetch orders");
+        throw new Error(json.message || "Failed to fetch orders");
       }
 
       setData(transformApiData(json));
       setLastUpdated(new Date());
+      setError(null);
     } catch (err) {
       console.error("Error fetching orders:", err);
       setError(err.message);
@@ -359,11 +385,19 @@ export function DataTable() {
       setLoading(false);
       setIsRefreshing(false);
     }
-  }, []);
+  }, [sessionStatus]);
 
   React.useEffect(() => {
-    fetchOrders();
-  }, [fetchOrders]);
+    // Trigger fetch when session becomes authenticated
+    if (sessionStatus === "authenticated") {
+      fetchOrders();
+    }
+    // If session is loading, wait; if unauthenticated, set loading false
+    if (sessionStatus === "unauthenticated") {
+      setLoading(false);
+      setData([]);
+    }
+  }, [fetchOrders, sessionStatus]);
 
   const dataIds = React.useMemo(() => data?.map(({ id }) => id) || [], [data]);
 
@@ -633,9 +667,6 @@ export function DataTable() {
           </TabsTrigger>
         </TabsList>
         <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
-          {/* <div className="text-xs text-muted-foreground hidden md:block">
-            Last updated: {lastUpdated.toLocaleTimeString()}
-          </div> */}
           <Button
             onClick={fetchOrders}
             variant="outline"
@@ -683,26 +714,6 @@ export function DataTable() {
           </DropdownMenu>
         </div>
       </div>
-
-      {/* Daily Stats
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 px-4 lg:px-6">
-        <div className="rounded-lg border p-4">
-          <div className="text-muted-foreground text-sm">Total Orders</div>
-          <div className="text-2xl font-bold">{dailyStats.totalOrders}</div>
-        </div>
-        <div className="rounded-lg border p-4">
-          <div className="text-muted-foreground text-sm">Revenue</div>
-          <div className="text-2xl font-bold">₹{dailyStats.totalRevenue.toFixed(2)}</div>
-        </div>
-        <div className="rounded-lg border p-4">
-          <div className="text-muted-foreground text-sm">Completed</div>
-          <div className="text-2xl font-bold">{dailyStats.completedOrders}</div>
-        </div>
-        <div className="rounded-lg border p-4">
-          <div className="text-muted-foreground text-sm">Avg. Order Value</div>
-          <div className="text-2xl font-bold">₹{dailyStats.averageOrderValue.toFixed(2)}</div>
-        </div>
-      </div> */}
 
       <TabsContent
         value="orders"

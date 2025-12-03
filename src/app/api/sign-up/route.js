@@ -1,13 +1,37 @@
-import dbConnect from "@/lib/dbConnect";
-import OwnerModel from "@/model/Owner";
-import bcrypt from "bcryptjs";
-import { sendVerificationEmail } from "@/helpers/sendVerificationCode";
+// app/api/sign-up/route.js
+import { NextResponse } from 'next/server';
+import dbConnect from '@/lib/dbConnect';
+import OwnerModel from '@/model/Owner';
+import { sendVerificationEmail } from '@/helpers/sendVerificationCode';
+import { getCurrentTimestamp, getTTLTimestamp } from '@/lib/dateUtils';
 
 export async function POST(request) {
-  await dbConnect();
-
   try {
+    await dbConnect();
+    
     const {
+      name, email, password, cafeName,
+      address, phone, city, state, pincode
+    } = await request.json();
+
+    // Check if email already exists and is fully verified
+    const existingVerifiedOwner = await OwnerModel.findOne({ 
+      email, 
+      isVerified: true,
+      isPhoneVerified: true
+    });
+    
+    if (existingVerifiedOwner) {
+      return NextResponse.json({
+        success: false,
+        message: 'User already exists with this email'
+      }, { status: 400 });
+    }
+
+    // Generate email OTP
+    const verifyCode = Math.floor(100000 + Math.random() * 900000).toString();
+    
+    const ownerData = {
       name,
       email,
       password,
@@ -17,79 +41,50 @@ export async function POST(request) {
       city,
       state,
       pincode,
-    } = await request.json();
+      verifyCode,
+      verifyCodeExpiry: getTTLTimestamp(10), // 10 minutes
+      isVerified: false,
+      isPhoneVerified: false,
+      registrationStep: 'email-verification',
+      ttlExpireAt: getTTLTimestamp(10) // 10 minutes for TTL
+    };
 
-    const existingOwnerByEmail = await OwnerModel.findOne({ email });
-
-    const verifyCode = Math.floor(100000 + Math.random() * 900000).toString();
-
-    if (existingOwnerByEmail) {
-      if (existingOwnerByEmail.isVerified) {
-        return Response.json(
-          {
-            success: false,
-            message: "User already exists with this email",
-          },
-          { status: 400 }
-        );
-      } else {
-        const hashedPassword = await bcrypt.hash(password, 10);
-        existingOwnerByEmail.password = hashedPassword;
-        existingOwnerByEmail.verifyCode = verifyCode;
-        existingOwnerByEmail.verifyCodeExpiry = new Date(Date.now() + 3600000);
-        await existingOwnerByEmail.save();
-      }
+    let owner = await OwnerModel.findOne({ email });
+    
+    if (owner) {
+      // Update existing unverified owner
+      Object.assign(owner, ownerData);
+      await owner.save();
     } else {
-      const hashedPassword = await bcrypt.hash(password, 10);
-      const expiryDate = new Date();
-      expiryDate.setHours(expiryDate.getHours() + 1);
-
-      const newOwner = new OwnerModel({
-        name,
-        email,
-        password: hashedPassword,
-        verifyCode,
-        verifyCodeExpiry: expiryDate,
-        isVerified: false,
-        cafeName,
-        address,
-        phone,
-        city,
-        state,
-        pincode,
-      });
-
-      await newOwner.save();
+      // Create new owner
+      owner = new OwnerModel(ownerData);
+      await owner.save();
     }
 
-    // Send verification code
+    // Send email OTP using your existing function
     const emailResponse = await sendVerificationEmail(email, name, verifyCode);
 
     if (!emailResponse.success) {
-      return Response.json(
-        {
-          success: false,
-          message: emailResponse.message,
-        },
-        { status: 500 }
-      );
+      return NextResponse.json({
+        success: false,
+        message: emailResponse.message
+      }, { status: 500 });
     }
 
-    return Response.json(
-      {
-        success: true,
-        message: "User registered successfully",
-      },
-      { status: 200 }
-    );
+    return NextResponse.json({
+      success: true,
+      message: 'Email OTP sent successfully. Please verify within 10 minutes.',
+      registrationId: owner._id.toString(),
+      nextStep: 'verify-email',
+      expiresAt: owner.ttlExpireAt // For debugging
+    });
+
   } catch (error) {
-    console.error("Error registering user", error);
-    return Response.json(
-      {
-        success: false,
-        message: "Error registering user",
-      },
-      { status: 500 }
-    );
+    console.error('Registration error:', error);
+    return NextResponse.json({
+      success: false,
+      message: 'Registration failed',
+      error: error.message
+    }, { status: 500 });
   }
 }
