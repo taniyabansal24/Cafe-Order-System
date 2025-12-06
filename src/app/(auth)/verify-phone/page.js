@@ -52,7 +52,9 @@ export default function VerifyPhonePage() {
       });
 
       if (res.data.success) {
-        toast.success("Registration completed successfully! You can now sign in.");
+        toast.success(
+          "Registration completed successfully! You can now sign in."
+        );
         router.push("/sign-in");
       } else {
         toast.error(res.data.message || "Invalid OTP");
@@ -96,7 +98,7 @@ export default function VerifyPhonePage() {
         <div className="text-center space-y-2">
           <h2 className="text-2xl font-bold">Verify Your Phone</h2>
           <p className="text-gray-600">
-            We've sent a 6-digit code to your phone:
+            We&apos;ve sent a 6-digit code to your phone:
             <br />
             <strong>{phone}</strong>
           </p>
@@ -108,9 +110,7 @@ export default function VerifyPhonePage() {
             placeholder="Enter 6-digit OTP"
             maxLength={6}
             value={otp}
-            onChange={(e) =>
-              setOtp(e.target.value.replace(/\D/g, ""))
-            }
+            onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
             className="text-center text-2xl tracking-widest border-2 focus:border-blue-500"
             disabled={isSubmitting}
           />
@@ -141,7 +141,11 @@ export default function VerifyPhonePage() {
 
           <Button
             variant="ghost"
-            onClick={() => router.push(`/verify?email=${email}&registrationId=${registrationId}`)}
+            onClick={() =>
+              router.push(
+                `/verify?email=${email}&registrationId=${registrationId}`
+              )
+            }
             disabled={isSubmitting}
             className="w-full"
           >

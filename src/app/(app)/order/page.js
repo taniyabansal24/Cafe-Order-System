@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -293,15 +293,15 @@ export default function OrderPage() {
     }
   };
 
-  // Define your preferred category order here
-  const preferredCategoryOrder = [
-    "Pizza",
-    "Burger",
-    "Pasta & Noodles",
-    "Drinks",
-    "Desserts",
-    "Snacks",
-  ];
+const preferredCategoryOrder = useMemo(() => [
+  "Pizza",
+  "Burger",
+  "Pasta & Noodles",
+  "Drinks",
+  "Desserts",
+  "Snacks",
+], []);
+
 
   useEffect(() => {
     const fetchMenuAndCafe = async () => {

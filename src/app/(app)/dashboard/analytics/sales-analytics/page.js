@@ -1,7 +1,7 @@
 // analytics/sales-analytics/page.js
 "use client"
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
@@ -126,11 +126,8 @@ export default function SalesAnalytics() {
   const [useMockData, setUseMockData] = useState(false);
   const [lowSalesThreshold, setLowSalesThreshold] = useState(5);
 
-  useEffect(() => {
-    fetchSalesData();
-  }, [timeRange]);
-
-  const fetchSalesData = async () => {
+  // make fetchSalesData stable so useEffect can depend on it
+  const fetchSalesData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -156,7 +153,11 @@ export default function SalesAnalytics() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [timeRange]); // re-create only when timeRange changes
+
+  useEffect(() => {
+    fetchSalesData();
+  }, [fetchSalesData]);
 
   if (loading) {
     return (
