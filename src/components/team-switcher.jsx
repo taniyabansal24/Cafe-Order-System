@@ -1,9 +1,10 @@
 "use client";
 
 import * as React from "react";
-import { ChevronsUpDown, Plus } from "lucide-react";
+import { ChevronsUpDown, Plus, Coffee } from "lucide-react";
 import { gsap } from "gsap";
 import { useRef, useEffect } from "react";
+import Link from "next/link";
 
 import {
   DropdownMenu,
@@ -20,72 +21,43 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { Button } from "@/components/ui/button";
 
 export function TeamSwitcher({ teams }) {
   const { isMobile } = useSidebar();
   const logoRef = useRef(null);
   const textRef = useRef(null);
-  const containerRef = useRef(null);
 
   useEffect(() => {
     const tl = gsap.timeline();
 
-    // Initial state - both start from center
+    // Initial state - elements start hidden
     gsap.set(logoRef.current, {
-      position: "absolute",
-      left: "50%",
-      top: "50%",
-      xPercent: -50,
-      yPercent: -50,
       scale: 0,
-      rotation: -180,
       opacity: 0,
     });
 
     gsap.set(textRef.current, {
-      position: "absolute",
-      left: "50%",
-      top: "50%",
-      xPercent: -50,
-      yPercent: -50,
       opacity: 0,
-      scale: 0.8,
+      x: -10,
     });
 
     // Animation sequence
     tl.to(logoRef.current, {
       opacity: 1,
-      scale: 1.5,
-      rotation: 0,
-      duration: 1,
-      ease: "elastic.out(1, 0.5)",
-    })
-    .to(logoRef.current, {
       scale: 1,
       duration: 0.6,
-      ease: "power2.out",
+      ease: "back.out(1.7)",
     })
-    .to(logoRef.current, {
-      left: "0%",
-      xPercent: 0,
-      duration: 1,
-      ease: "power2.inOut",
-    })
-    .fromTo(
+    .to(
       textRef.current,
       {
-        opacity: 0,
-        scale: 0.8,
-      },
-      {
         opacity: 1,
-        scale: 1,
-        left: "50px", // This should match where the text should end up (next to the logo)
-        xPercent: 0,
-        duration: 0.8,
-        ease: "back.out(1.7)",
+        x: 0,
+        duration: 0.4,
+        ease: "power2.out",
       },
-      "-=0.6"
+      "-=0.3"
     );
 
     return () => {
@@ -100,46 +72,76 @@ export function TeamSwitcher({ teams }) {
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton
               size="lg"
-              className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground relative h-16"
+              className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground relative h-16 hover:bg-primary/5 transition-colors"
             >
-              {/* Container for both logo and text */}
-              <div className="relative w-full h-full">
-                {/* Logo Container */}
+              <div className="flex items-center space-x-3 w-full">
+                {/* Logo Container - Exact same as navigation */}
                 <div
                   ref={logoRef}
-                  className="flex aspect-square size-8 items-center justify-center rounded-4xl border-2 border-black bg-gray-100 shadow-md absolute"
+                  className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary"
                 >
-                  <img
-                    src="/assets/logo.png"
-                    alt="Cafe Order Logo"
-                    className="size-6"
-                    onError={(e) => {
-                      e.target.style.display = "none";
-                      e.target.nextSibling.style.display = "flex";
-                    }}
-                  />
-                  <div className="hidden size-8 items-center justify-center text-gray-700 font-bold text-lg">
-                    ☕
-                  </div>
+                  <Coffee className="h-6 w-6 text-white dark:invert" />
                 </div>
 
-                {/* Text Container - separate but in the same parent */}
+                {/* Text Container - Exact same gradient text */}
                 <div
                   ref={textRef}
-                  className="grid text-left text-sm leading-tight absolute"
+                  className="flex flex-col items-start text-left"
                 >
-                  <span className="truncate font-medium">
-                    Cafe Order System
+                  <span className="text-2xl font-bold bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
+                    CafeFlow
                   </span>
-                  <span className="truncate text-xs">
-                    Scan & Order
+                  <span className="text-xs text-muted-foreground">
+                    Smart Cafe Management
                   </span>
                 </div>
               </div>
 
-              
+              {!isMobile && (
+                <ChevronsUpDown className="ml-auto size-4" />
+              )}
             </SidebarMenuButton>
           </DropdownMenuTrigger>
+          
+          <DropdownMenuContent
+            className="w-64"
+            align="start"
+            side={isMobile ? "bottom" : "right"}
+            sideOffset={4}
+          >
+            <DropdownMenuLabel className="text-xs text-muted-foreground">
+              My Cafes
+            </DropdownMenuLabel>
+            {teams?.map((team, index) => (
+              <DropdownMenuItem key={index} className="gap-2 p-2">
+                <div className="flex size-6 items-center justify-center rounded-sm bg-primary/10">
+                  <Coffee className="size-4 text-primary" />
+                </div>
+                <div className="flex flex-col">
+                  <span className="font-medium">{team.label}</span>
+                  {team.subLabel && (
+                    <span className="text-xs text-muted-foreground">
+                      {team.subLabel}
+                    </span>
+                  )}
+                </div>
+              </DropdownMenuItem>
+            ))}
+            <DropdownMenuSeparator />
+            <Link href="/dashboard/add-cafe">
+              <DropdownMenuItem className="gap-2 p-2">
+                <div className="flex size-6 items-center justify-center rounded-sm border border-dashed border-primary">
+                  <Plus className="size-4 text-primary" />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-primary">Add Cafe</span>
+                  <span className="text-xs text-muted-foreground">
+                    Create new cafe profile
+                  </span>
+                </div>
+              </DropdownMenuItem>
+            </Link>
+          </DropdownMenuContent>
         </DropdownMenu>
       </SidebarMenuItem>
     </SidebarMenu>

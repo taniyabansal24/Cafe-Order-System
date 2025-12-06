@@ -63,6 +63,7 @@ const staticData = {
         { title: "Sales Analytics", url: "/dashboard/analytics/sales-analytics" },
         // { title: "Operations", url: "/dashboard/analytics/operations" },
         { title: "Customer Insights", url: "/dashboard/analytics/customer-insights" },
+        { title: "Product Analytics", url: "/dashboard/analytics/product-analytics" },
         // { title: "Menu & Growth", url: "/dashboard/analytics/menu&growth" },
       ],
     },

@@ -1,29 +1,30 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useRef } from "react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { AppSidebar } from "@/components/app-sidebar";
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
-import { Separator } from "@/components/ui/separator";
-import {
-  SidebarInset,
-  SidebarProvider,
-  SidebarTrigger,
-} from "@/components/ui/sidebar";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import { X, Loader2 } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { X, Loader2, Plus, Upload } from "lucide-react";
 
 export default function AddItemPage() {
   const router = useRouter();
@@ -154,202 +155,332 @@ export default function AddItemPage() {
     }
   };
 
-  const getFileInputDisplay = () => {
-    if (!item.images.length) return "No image chosen";
-    if (item.images.length === 1) return item.images[0].name;
-    return `${item.images.length} files selected`;
-  };
-
   return (
-    <>
-      {/* Add item page content  */}
-      <div className="flex justify-center md:p-6">
-        <div className="w-full max-w-2xl bg-card text-card-foreground shadow-lg rounded-2xl p-8 space-y-6 border border-border">
-          <h2 className="text-3xl font-bold">Add New Menu Item</h2>
-
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Item Name */}
-            <div className="space-y-2">
-              <Label htmlFor="name">Item Name</Label>
-              <Input
-                id="name"
-                placeholder="e.g. Veg Burger"
-                value={item.name}
-                onChange={(e) => setItem({ ...item, name: e.target.value })}
-              />
+    <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 dark:from-gray-900 dark:to-gray-950 p-4 md:p-6">
+      <div className="max-w-3xl mx-auto">
+        {/* Header */}
+        <div className="mb-6">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+            <div>
+              <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
+                Add New Menu Item
+              </h1>
+              <p className="text-muted-foreground mt-1 md:mt-2">
+                Add a new item to your cafe menu
+              </p>
             </div>
+            <Button
+              variant="outline"
+              onClick={() => router.push("/dashboard/menu")}
+              className="bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90 w-full sm:w-auto text-white"
+            >
+              View All Items
+            </Button>
+          </div>
+        </div>
 
-            {/* Description */}
-            <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                placeholder="e.g. Crispy patty with veggies"
-                value={item.description}
-                onChange={(e) =>
-                  setItem({ ...item, description: e.target.value })
-                }
-              />
-            </div>
-
-            {/* Category */}
-            <div className="space-y-2">
-              <Label htmlFor="category">Category</Label>
-              <Input
-                id="category"
-                placeholder="e.g. Snacks"
-                value={item.category}
-                onChange={(e) => setItem({ ...item, category: e.target.value })}
-              />
-            </div>
-
-            {/* Price & Offer */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="price">Price (₹)</Label>
-                <Input
-                  id="price"
-                  type="number"
-                  placeholder="e.g. 149"
-                  value={item.price}
-                  onChange={(e) => setItem({ ...item, price: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="offer">Offer (%)</Label>
-                <Input
-                  id="offer"
-                  type="number"
-                  placeholder="e.g. 10"
-                  value={item.offer}
-                  onChange={(e) => setItem({ ...item, offer: e.target.value })}
-                />
-              </div>
-            </div>
-
-            {/* Type */}
-            <div className="space-y-2">
-              <Label htmlFor="type">Type</Label>
-              <select
-                id="type"
-                className="w-full rounded-md border border-input bg-background text-foreground px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
-                value={item.type}
-                onChange={(e) => setItem({ ...item, type: e.target.value })}
-              >
-                <option value="Veg">Veg</option>
-                <option value="Non-Veg">Non-Veg</option>
-              </select>
-            </div>
-
-            {/* Image Upload */}
-            <div className="space-y-2">
-              <Label htmlFor="images">Images (you can select multiple)</Label>
-              <div className="flex items-center gap-2">
-                <label className="flex-1">
-                  <div className="flex items-center gap-2 border border-input rounded-md px-3 py-2 bg-muted text-muted-foreground hover:bg-muted/80 cursor-pointer">
-                    <span>Choose file:</span>
-                    <span className="text-sm truncate">
-                      {getFileInputDisplay()}
-                    </span>
+        {/* Form Card */}
+        <Card className="border border-gray-200 dark:border-gray-800 shadow-sm">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-xl">Add Menu Item</CardTitle>
+            <CardDescription>
+              Fill in the details below to add a new item to your menu
+            </CardDescription>
+          </CardHeader>
+          
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Basic Information */}
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Item Name */}
+                  <div className="space-y-2">
+                    <Label htmlFor="name">
+                      Item Name <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      id="name"
+                      placeholder="e.g. Veg Burger"
+                      value={item.name}
+                      onChange={(e) => setItem({ ...item, name: e.target.value })}
+                      className="bg-white dark:bg-gray-900"
+                      required
+                    />
                   </div>
-                  <Input
-                    id="images"
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    onChange={handleImageChange}
-                    ref={fileInputRef}
-                    className="hidden"
+
+                  {/* Category */}
+                  <div className="space-y-2">
+                    <Label htmlFor="category">Category</Label>
+                    <Input
+                      id="category"
+                      placeholder="e.g. Snacks"
+                      value={item.category}
+                      onChange={(e) => setItem({ ...item, category: e.target.value })}
+                      className="bg-white dark:bg-gray-900"
+                    />
+                  </div>
+                </div>
+
+                {/* Description */}
+                <div className="space-y-2">
+                  <Label htmlFor="description">Description</Label>
+                  <Textarea
+                    id="description"
+                    placeholder="Describe your item..."
+                    value={item.description}
+                    onChange={(e) =>
+                      setItem({ ...item, description: e.target.value })
+                    }
+                    className="min-h-[100px] bg-white dark:bg-gray-900"
+                    rows={3}
                   />
-                </label>
-                {item.images.length > 0 && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => {
-                      setItem({ ...item, images: [] });
-                      setPreviewImages([]);
-                      if (fileInputRef.current) {
-                        fileInputRef.current.value = "";
-                      }
-                    }}
-                  >
-                    Clear All
-                  </Button>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Pricing */}
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  {/* Price */}
+                  <div className="space-y-2">
+                    <Label htmlFor="price">
+                      Price (₹) <span className="text-red-500">*</span>
+                    </Label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
+                        ₹
+                      </span>
+                      <Input
+                        id="price"
+                        type="number"
+                        placeholder="149"
+                        value={item.price}
+                        onChange={(e) => setItem({ ...item, price: e.target.value })}
+                        className="pl-8 bg-white dark:bg-gray-900"
+                        required
+                        min="0"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Offer */}
+                  <div className="space-y-2">
+                    <Label htmlFor="offer">Discount (%)</Label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
+                        %
+                      </span>
+                      <Input
+                        id="offer"
+                        type="number"
+                        placeholder="10"
+                        value={item.offer}
+                        onChange={(e) => setItem({ ...item, offer: e.target.value })}
+                        className="pl-8 bg-white dark:bg-gray-900"
+                        min="0"
+                        max="100"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Type */}
+                  <div className="space-y-2">
+                    <Label htmlFor="type">Type</Label>
+                    <Select
+                      value={item.type}
+                      onValueChange={(value) => setItem({ ...item, type: value })}
+                    >
+                      <SelectTrigger className="bg-white dark:bg-gray-900">
+                        <SelectValue placeholder="Select type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Veg">
+                          <span className="flex items-center gap-2">
+                            <span className="h-2 w-2 rounded-full bg-green-500"></span>
+                            Veg
+                          </span>
+                        </SelectItem>
+                        <SelectItem value="Non-Veg">
+                          <span className="flex items-center gap-2">
+                            <span className="h-2 w-2 rounded-full bg-red-500"></span>
+                            Non-Veg
+                          </span>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Image Upload */}
+              <div className="space-y-4">
+                <div>
+                  <Label>Images (Optional)</Label>
+                  <p className="text-sm text-gray-500 mt-1">
+                    Upload up to 5 images
+                  </p>
+                </div>
+
+                {/* Upload Area */}
+                <div
+                  onClick={() => fileInputRef.current?.click()}
+                  className="border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-lg p-6 text-center cursor-pointer hover:border-blue-500 transition-colors"
+                >
+                  <div className="flex flex-col items-center gap-2">
+                    <Upload className="h-8 w-8 text-gray-400" />
+                    <div>
+                      <p className="font-medium">Click to upload</p>
+                      <p className="text-sm text-gray-500 mt-1">
+                        PNG, JPG, GIF up to 5MB
+                      </p>
+                    </div>
+                    <Input
+                      id="images"
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={handleImageChange}
+                      ref={fileInputRef}
+                      className="hidden"
+                    />
+                  </div>
+                </div>
+
+                {/* Image Previews */}
+                {previewImages.length > 0 && (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <Label>
+                        Selected ({previewImages.length}/5)
+                      </Label>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setItem({ ...item, images: [] });
+                          setPreviewImages([]);
+                          if (fileInputRef.current) {
+                            fileInputRef.current.value = "";
+                          }
+                        }}
+                      >
+                        Clear All
+                      </Button>
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                      {previewImages.map((preview, index) => (
+                        <div
+                          key={index}
+                          className="relative group rounded-lg overflow-hidden border"
+                        >
+                          <div className="aspect-square relative bg-gray-100 dark:bg-gray-800">
+                            <img
+                              src={preview}
+                              alt={`Preview ${index}`}
+                              className="h-full w-full object-cover"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => removeImage(index)}
+                              className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 )}
               </div>
 
-              {/* Image Previews */}
-              {previewImages.length > 0 && (
-                <div className="mt-4">
-                  <Label>Selected Images:</Label>
-                  <div className="grid grid-cols-3 gap-2 mt-2">
-                    {previewImages.map((preview, index) => (
-                      <div key={index} className="relative group">
-                        <img
-                          src={preview}
-                          alt={`Preview ${index}`}
-                          className="h-24 w-full object-cover rounded-md"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => removeImage(index)}
-                          className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                        <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs p-1 truncate">
-                          {item.images[index].name}
-                        </div>
-                      </div>
-                    ))}
+              <Separator />
+
+              {/* Settings */}
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Availability */}
+                  <div className="flex items-center justify-between p-3 rounded-lg border">
+                    <div>
+                      <Label htmlFor="available" className="font-medium">
+                        Available
+                      </Label>
+                      <p className="text-sm text-gray-500">
+                        Show in menu
+                      </p>
+                    </div>
+                    <Switch
+                      id="available"
+                      checked={item.isAvailable}
+                      onCheckedChange={(checked) =>
+                        setItem({ ...item, isAvailable: checked })
+                      }
+                    />
+                  </div>
+
+                  {/* Featured */}
+                  <div className="flex items-center justify-between p-3 rounded-lg border">
+                    <div>
+                      <Label htmlFor="featured" className="font-medium">
+                        Featured
+                      </Label>
+                      <p className="text-sm text-gray-500">
+                        Highlight item
+                      </p>
+                    </div>
+                    <Switch
+                      id="featured"
+                      checked={item.featured}
+                      onCheckedChange={(checked) =>
+                        setItem({ ...item, featured: checked })
+                      }
+                    />
                   </div>
                 </div>
-              )}
-            </div>
-
-            {/* Switches */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="flex items-center gap-3">
-                <Switch
-                  id="available"
-                  checked={item.isAvailable}
-                  onCheckedChange={(checked) =>
-                    setItem({ ...item, isAvailable: checked })
-                  }
-                />
-                <Label htmlFor="available">Available</Label>
               </div>
-              <div className="flex items-center gap-3">
-                <Switch
-                  id="featured"
-                  checked={item.featured}
-                  onCheckedChange={(checked) =>
-                    setItem({ ...item, featured: checked })
-                  }
-                />
-                <Label htmlFor="featured">Featured</Label>
-              </div>
-            </div>
 
-            {/* Submit Button */}
-            <Button
-              type="submit"
-              disabled={loading}
-              className="w-full text-base gap-2"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Adding Item...
-                </>
-              ) : (
-                "Add Item"
-              )}
-            </Button>
-          </form>
+              {/* Submit Button */}
+              <div className="pt-4">
+                <Button
+                  type="submit"
+                  disabled={loading}
+                  className="bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90 w-full"
+                  size="lg"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Adding Item...
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Menu Item
+                    </>
+                  )}
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+
+        {/* Quick Tips */}
+        <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+          <h4 className="font-medium text-blue-800 dark:text-blue-300 mb-2">
+            Quick Tips
+          </h4>
+          <ul className="text-sm text-blue-700 dark:text-blue-400 space-y-1">
+            <li>• Use clear, descriptive names</li>
+            <li>• Add good quality images</li>
+            <li>• Set appropriate categories</li>
+            <li>• Update prices regularly</li>
+          </ul>
         </div>
       </div>
-    </>
+    </div>
   );
 }
