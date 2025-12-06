@@ -25,6 +25,16 @@ import {
   Mail,
 } from "lucide-react";
 
+// Static preferred category order (no hooks needed)
+const preferredCategoryOrder = [
+  "Pizza",
+  "Burger",
+  "Pasta & Noodles",
+  "Drinks",
+  "Desserts",
+  "Snacks",
+];
+
 // Load Razorpay script dynamically
 const loadRazorpayScript = (src) => {
   return new Promise((resolve) => {
@@ -292,15 +302,6 @@ export default function OrderPage() {
       throw error;
     }
   };
-
-const preferredCategoryOrder = useMemo(() => [
-  "Pizza",
-  "Burger",
-  "Pasta & Noodles",
-  "Drinks",
-  "Desserts",
-  "Snacks",
-], []);
 
 
   useEffect(() => {

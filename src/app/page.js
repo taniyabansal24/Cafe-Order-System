@@ -926,7 +926,7 @@ export default function HomePage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">
-                    Today's Revenue
+                    Today&apos;s Revenue
                   </p>
                   <p className="text-3xl font-bold text-green-600">₹24,850</p>
                 </div>
