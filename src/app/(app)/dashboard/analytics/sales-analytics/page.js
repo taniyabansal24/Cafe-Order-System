@@ -1,12 +1,18 @@
 // analytics/sales-analytics/page.js
-"use client"
+"use client";
 
-import { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { 
+import { useState, useEffect, useCallback } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
   TrendingUp,
   TrendingDown,
   Package,
@@ -30,13 +36,9 @@ import {
   LineChart,
   Target,
   Crown,
-  Award
-} from 'lucide-react';
-import { 
-  Bar, 
-  Pie, 
-  Line 
-} from 'react-chartjs-2';
+  Award,
+} from "lucide-react";
+import { Bar, Pie, Line } from "react-chartjs-2";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -48,7 +50,7 @@ import {
   Title,
   Tooltip,
   Legend,
-} from 'chart.js';
+} from "chart.js";
 
 // Register ChartJS components
 ChartJS.register(
@@ -71,15 +73,15 @@ const mockSalesData = {
       data: [],
       currentMonth: 0,
       previousMonth: 0,
-      growth: 0
+      growth: 0,
     },
     weekly: {
       labels: [],
       data: [],
       currentWeek: 0,
       previousWeek: 0,
-      growth: 0
-    }
+      growth: 0,
+    },
   },
   orders: {
     total: 0,
@@ -88,75 +90,75 @@ const mockSalesData = {
     avgOrderValue: 0,
     daily: {
       labels: [],
-      data: []
+      data: [],
     },
     weekly: {
       labels: [],
-      data: []
+      data: [],
     },
     distribution: {
       completed: 0,
-      canceled: 0
-    }
+      canceled: 0,
+    },
   },
   products: {
     topSelling: {
       allTime: [],
       lastMonth: [],
-      lastWeek: []
+      lastWeek: [],
     },
     weeklyComparison: {
       currentWeek: [],
-      previousWeek: []
+      previousWeek: [],
     },
     lowSelling: [],
     categories: {
       drinks: 0,
       snacks: 0,
-      meals: 0
-    }
-  }
+      meals: 0,
+    },
+  },
 };
 
 export default function SalesAnalytics() {
   const [salesData, setSalesData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [timeRange, setTimeRange] = useState('month');
+  const [timeRange, setTimeRange] = useState("month");
   const [useMockData, setUseMockData] = useState(false);
   const [lowSalesThreshold, setLowSalesThreshold] = useState(5);
 
   useEffect(() => {
     fetchSalesData();
-  }, [timeRange]);
+  }, [fetchSalesData]);
 
-  const fetchSalesData = async () => {
+  const fetchSalesData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
       const response = await fetch(`/api/analytics/sales?range=${timeRange}`);
-      
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      
+
       const result = await response.json();
-      
+
       if (!result.success) {
-        throw new Error(result.error || 'Failed to fetch sales data');
+        throw new Error(result.error || "Failed to fetch sales data");
       }
-      
+
       setSalesData(result.data);
       setUseMockData(false);
     } catch (error) {
-      console.error('Error fetching sales data:', error);
+      console.error("Error fetching sales data:", error);
       setError(error.message);
       setSalesData(mockSalesData);
       setUseMockData(true);
     } finally {
       setLoading(false);
     }
-  };
+  }, [timeRange]);
 
   if (loading) {
     return (
@@ -169,11 +171,11 @@ export default function SalesAnalytics() {
   }
 
   // Check if there's actual data or just empty structure
-  const hasActualData = salesData && (
-    salesData.orders.total > 0 || 
-    salesData.revenue.monthly.currentMonth > 0 ||
-    salesData.products.topSelling.allTime.length > 0
-  );
+  const hasActualData =
+    salesData &&
+    (salesData.orders.total > 0 ||
+      salesData.revenue.monthly.currentMonth > 0 ||
+      salesData.products.topSelling.allTime.length > 0);
 
   if (!hasActualData && !useMockData) {
     return (
@@ -185,7 +187,9 @@ export default function SalesAnalytics() {
                 <DollarSign className="h-6 w-6 text-green-500" />
               </div>
               <div>
-                <h1 className="text-3xl font-bold tracking-tight">Sales Analytics</h1>
+                <h1 className="text-3xl font-bold tracking-tight">
+                  Sales Analytics
+                </h1>
                 <p className="text-muted-foreground">
                   Detailed breakdown of revenue, orders, and product performance
                 </p>
@@ -193,19 +197,27 @@ export default function SalesAnalytics() {
             </div>
           </div>
           <div className="flex gap-2">
-            <Button 
-              variant={timeRange === 'week' ? 'default' : 'outline'} 
+            <Button
+              variant={timeRange === "week" ? "default" : "outline"}
               size="sm"
-              onClick={() => setTimeRange('week')}
-              className={timeRange === 'week' ? 'bg-gradient-to-r from-blue-500 to-cyan-600' : ''}
+              onClick={() => setTimeRange("week")}
+              className={
+                timeRange === "week"
+                  ? "bg-gradient-to-r from-blue-500 to-cyan-600"
+                  : ""
+              }
             >
               Weekly
             </Button>
-            <Button 
-              variant={timeRange === 'month' ? 'default' : 'outline'} 
+            <Button
+              variant={timeRange === "month" ? "default" : "outline"}
               size="sm"
-              onClick={() => setTimeRange('month')}
-              className={timeRange === 'month' ? 'bg-gradient-to-r from-purple-500 to-pink-600' : ''}
+              onClick={() => setTimeRange("month")}
+              className={
+                timeRange === "month"
+                  ? "bg-gradient-to-r from-purple-500 to-pink-600"
+                  : ""
+              }
             >
               Monthly
             </Button>
@@ -221,12 +233,13 @@ export default function SalesAnalytics() {
               <div>
                 <h3 className="text-lg font-semibold">No Sales Data Yet</h3>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Start by completing some orders to see your sales analytics here.
+                  Start by completing some orders to see your sales analytics
+                  here.
                 </p>
               </div>
-              <Button 
-                variant="outline" 
-                onClick={() => window.location.href = '/menu'}
+              <Button
+                variant="outline"
+                onClick={() => (window.location.href = "/menu")}
                 className="mt-4"
               >
                 Go to Menu
@@ -243,10 +256,10 @@ export default function SalesAnalytics() {
     labels: salesData.revenue.monthly.labels,
     datasets: [
       {
-        label: 'Monthly Revenue (₹)',
+        label: "Monthly Revenue (₹)",
         data: salesData.revenue.monthly.data,
-        backgroundColor: 'rgba(136, 84, 208, 0.8)',
-        borderColor: 'rgba(136, 84, 208, 1)',
+        backgroundColor: "rgba(136, 84, 208, 0.8)",
+        borderColor: "rgba(136, 84, 208, 1)",
         borderWidth: 2,
         borderRadius: 8,
       },
@@ -257,10 +270,10 @@ export default function SalesAnalytics() {
     labels: salesData.revenue.weekly.labels,
     datasets: [
       {
-        label: 'Weekly Revenue (₹)',
+        label: "Weekly Revenue (₹)",
         data: salesData.revenue.weekly.data,
-        borderColor: 'rgba(34, 197, 94, 1)',
-        backgroundColor: 'rgba(34, 197, 94, 0.2)',
+        borderColor: "rgba(34, 197, 94, 1)",
+        backgroundColor: "rgba(34, 197, 94, 0.2)",
         borderWidth: 3,
         tension: 0.1,
         fill: true,
@@ -272,10 +285,10 @@ export default function SalesAnalytics() {
     labels: salesData.orders.daily.labels,
     datasets: [
       {
-        label: 'Orders per Day',
+        label: "Orders per Day",
         data: salesData.orders.daily.data,
-        borderColor: 'rgba(59, 130, 246, 1)',
-        backgroundColor: 'rgba(59, 130, 246, 0.2)',
+        borderColor: "rgba(59, 130, 246, 1)",
+        backgroundColor: "rgba(59, 130, 246, 0.2)",
         borderWidth: 2,
         tension: 0.1,
         fill: true,
@@ -287,10 +300,10 @@ export default function SalesAnalytics() {
     labels: salesData.orders.weekly.labels,
     datasets: [
       {
-        label: 'Orders per Week',
+        label: "Orders per Week",
         data: salesData.orders.weekly.data,
-        backgroundColor: 'rgba(249, 115, 22, 0.8)',
-        borderColor: 'rgba(249, 115, 22, 1)',
+        backgroundColor: "rgba(249, 115, 22, 0.8)",
+        borderColor: "rgba(249, 115, 22, 1)",
         borderWidth: 2,
         borderRadius: 8,
       },
@@ -298,33 +311,40 @@ export default function SalesAnalytics() {
   };
 
   const ordersDistributionData = {
-    labels: ['Completed Orders', 'Canceled Orders'],
+    labels: ["Completed Orders", "Canceled Orders"],
     datasets: [
       {
-        data: [salesData.orders.distribution.completed, salesData.orders.distribution.canceled],
-        backgroundColor: ['rgba(34, 197, 94, 0.8)', 'rgba(239, 68, 68, 0.8)'],
-        borderColor: ['rgb(34, 197, 94)', 'rgb(239, 68, 68)'],
+        data: [
+          salesData.orders.distribution.completed,
+          salesData.orders.distribution.canceled,
+        ],
+        backgroundColor: ["rgba(34, 197, 94, 0.8)", "rgba(239, 68, 68, 0.8)"],
+        borderColor: ["rgb(34, 197, 94)", "rgb(239, 68, 68)"],
         borderWidth: 3,
       },
     ],
   };
 
   const weeklyComparisonData = {
-    labels: salesData.products.weeklyComparison.currentWeek.map(p => p.name),
+    labels: salesData.products.weeklyComparison.currentWeek.map((p) => p.name),
     datasets: [
       {
-        label: 'This Week',
-        data: salesData.products.weeklyComparison.currentWeek.map(p => p.sales),
-        backgroundColor: 'rgba(136, 84, 208, 0.8)',
-        borderColor: 'rgb(136, 84, 208)',
+        label: "This Week",
+        data: salesData.products.weeklyComparison.currentWeek.map(
+          (p) => p.sales
+        ),
+        backgroundColor: "rgba(136, 84, 208, 0.8)",
+        borderColor: "rgb(136, 84, 208)",
         borderWidth: 2,
         borderRadius: 8,
       },
       {
-        label: 'Last Week',
-        data: salesData.products.weeklyComparison.previousWeek.map(p => p.sales),
-        backgroundColor: 'rgba(156, 163, 175, 0.8)',
-        borderColor: 'rgb(156, 163, 175)',
+        label: "Last Week",
+        data: salesData.products.weeklyComparison.previousWeek.map(
+          (p) => p.sales
+        ),
+        backgroundColor: "rgba(156, 163, 175, 0.8)",
+        borderColor: "rgb(156, 163, 175)",
         borderWidth: 2,
         borderRadius: 8,
       },
@@ -332,16 +352,24 @@ export default function SalesAnalytics() {
   };
 
   const categoryPerformanceData = {
-    labels: ['Drinks', 'Snacks', 'Meals'],
+    labels: ["Drinks", "Snacks", "Meals"],
     datasets: [
       {
         data: [
           salesData.products.categories.drinks,
           salesData.products.categories.snacks,
-          salesData.products.categories.meals
+          salesData.products.categories.meals,
         ],
-        backgroundColor: ['rgba(59, 130, 246, 0.8)', 'rgba(245, 158, 11, 0.8)', 'rgba(16, 185, 129, 0.8)'],
-        borderColor: ['rgb(59, 130, 246)', 'rgb(245, 158, 11)', 'rgb(16, 185, 129)'],
+        backgroundColor: [
+          "rgba(59, 130, 246, 0.8)",
+          "rgba(245, 158, 11, 0.8)",
+          "rgba(16, 185, 129, 0.8)",
+        ],
+        borderColor: [
+          "rgb(59, 130, 246)",
+          "rgb(245, 158, 11)",
+          "rgb(16, 185, 129)",
+        ],
         borderWidth: 3,
       },
     ],
@@ -353,42 +381,42 @@ export default function SalesAnalytics() {
     maintainAspectRatio: false,
     plugins: {
       legend: {
-        position: 'top',
+        position: "top",
         labels: {
           font: {
             size: 14,
-            family: "'Inter', sans-serif"
+            family: "'Inter', sans-serif",
           },
-          color: 'var(--muted-foreground)'
-        }
-      }
+          color: "var(--muted-foreground)",
+        },
+      },
     },
     scales: {
       y: {
         beginAtZero: true,
         grid: {
-          color: 'rgba(0, 0, 0, 0.05)'
+          color: "rgba(0, 0, 0, 0.05)",
         },
         ticks: {
           font: {
-            size: 12
+            size: 12,
           },
-          callback: function(value) {
-            return '₹' + value.toLocaleString();
-          }
-        }
+          callback: function (value) {
+            return "₹" + value.toLocaleString();
+          },
+        },
       },
       x: {
         grid: {
-          color: 'rgba(0, 0, 0, 0.05)'
+          color: "rgba(0, 0, 0, 0.05)",
         },
         ticks: {
           font: {
-            size: 12
-          }
-        }
-      }
-    }
+            size: 12,
+          },
+        },
+      },
+    },
   };
 
   const lineChartOptions = {
@@ -399,12 +427,12 @@ export default function SalesAnalytics() {
         ...barChartOptions.scales.y,
         ticks: {
           ...barChartOptions.scales.y.ticks,
-          callback: function(value) {
+          callback: function (value) {
             return value.toLocaleString();
-          }
-        }
-      }
-    }
+          },
+        },
+      },
+    },
   };
 
   const pieChartOptions = {
@@ -412,41 +440,53 @@ export default function SalesAnalytics() {
     maintainAspectRatio: false,
     plugins: {
       legend: {
-        position: 'bottom',
+        position: "bottom",
         labels: {
           font: {
             size: 12,
-            family: "'Inter', sans-serif"
+            family: "'Inter', sans-serif",
           },
-          color: 'var(--muted-foreground)'
-        }
-      }
-    }
+          color: "var(--muted-foreground)",
+        },
+      },
+    },
   };
 
   const getGrowthColor = (growth) => {
-    return growth >= 0 ? 'text-green-600' : 'text-red-600';
+    return growth >= 0 ? "text-green-600" : "text-red-600";
   };
 
   const getGrowthIcon = (growth) => {
-    return growth >= 0 ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />;
+    return growth >= 0 ? (
+      <ArrowUp className="h-4 w-4" />
+    ) : (
+      <ArrowDown className="h-4 w-4" />
+    );
   };
 
   const getSuggestionColor = (suggestion) => {
     switch (suggestion) {
-      case 'hide': return 'bg-gradient-to-r from-red-500 to-red-600';
-      case 'replace': return 'bg-gradient-to-r from-amber-500 to-amber-600';
-      case 'keep': return 'bg-gradient-to-r from-green-500 to-green-600';
-      default: return 'bg-gradient-to-r from-gray-500 to-gray-600';
+      case "hide":
+        return "bg-gradient-to-r from-red-500 to-red-600";
+      case "replace":
+        return "bg-gradient-to-r from-amber-500 to-amber-600";
+      case "keep":
+        return "bg-gradient-to-r from-green-500 to-green-600";
+      default:
+        return "bg-gradient-to-r from-gray-500 to-gray-600";
     }
   };
 
   const getSuggestionIcon = (suggestion) => {
     switch (suggestion) {
-      case 'hide': return <EyeOff className="h-4 w-4" />;
-      case 'replace': return <RefreshCw className="h-4 w-4" />;
-      case 'keep': return <Eye className="h-4 w-4" />;
-      default: return <Eye className="h-4 w-4" />;
+      case "hide":
+        return <EyeOff className="h-4 w-4" />;
+      case "replace":
+        return <RefreshCw className="h-4 w-4" />;
+      case "keep":
+        return <Eye className="h-4 w-4" />;
+      default:
+        return <Eye className="h-4 w-4" />;
     }
   };
 
@@ -460,7 +500,9 @@ export default function SalesAnalytics() {
               <DollarSign className="h-6 w-6 text-green-500" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold tracking-tight">Sales Analytics</h1>
+              <h1 className="text-3xl font-bold tracking-tight">
+                Sales Analytics
+              </h1>
               <p className="text-muted-foreground">
                 Track revenue, orders, and product performance in real-time
               </p>
@@ -468,32 +510,40 @@ export default function SalesAnalytics() {
           </div>
         </div>
         <div className="flex gap-2">
-          <Button 
-            variant={timeRange === 'week' ? 'default' : 'outline'} 
+          <Button
+            variant={timeRange === "week" ? "default" : "outline"}
             size="sm"
-            onClick={() => setTimeRange('week')}
-            className={timeRange === 'week' ? 'bg-gradient-to-r from-blue-500 to-cyan-600' : ''}
+            onClick={() => setTimeRange("week")}
+            className={
+              timeRange === "week"
+                ? "bg-gradient-to-r from-blue-500 to-cyan-600"
+                : ""
+            }
           >
             <Calendar className="h-3 w-3 mr-1" />
             Weekly
           </Button>
-          <Button 
-            variant={timeRange === 'month' ? 'default' : 'outline'} 
+          <Button
+            variant={timeRange === "month" ? "default" : "outline"}
             size="sm"
-            onClick={() => setTimeRange('month')}
-            className={timeRange === 'month' ? 'bg-gradient-to-r from-purple-500 to-pink-600' : ''}
+            onClick={() => setTimeRange("month")}
+            className={
+              timeRange === "month"
+                ? "bg-gradient-to-r from-purple-500 to-pink-600"
+                : ""
+            }
           >
             <Calendar className="h-3 w-3 mr-1" />
             Monthly
           </Button>
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             size="sm"
             onClick={fetchSalesData}
             disabled={loading}
             className="gap-1"
           >
-            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
             Refresh
           </Button>
         </div>
@@ -506,9 +556,13 @@ export default function SalesAnalytics() {
               <AlertTriangle className="h-5 w-5 text-red-500" />
             </div>
             <div className="ml-3">
-              <h3 className="text-sm font-medium text-red-800 dark:text-red-400">Failed to load sales data</h3>
+              <h3 className="text-sm font-medium text-red-800 dark:text-red-400">
+                Failed to load sales data
+              </h3>
               <p className="text-sm text-red-700 dark:text-red-500 mt-1">
-                {useMockData ? "Showing demo data instead." : "Please try again later."}
+                {useMockData
+                  ? "Showing demo data instead."
+                  : "Please try again later."}
               </p>
             </div>
           </div>
@@ -522,7 +576,9 @@ export default function SalesAnalytics() {
               <AlertTriangle className="h-5 w-5 text-amber-500" />
             </div>
             <div className="ml-3">
-              <h3 className="text-sm font-medium text-amber-800 dark:text-amber-400">Demo Mode</h3>
+              <h3 className="text-sm font-medium text-amber-800 dark:text-amber-400">
+                Demo Mode
+              </h3>
               <p className="text-sm text-amber-700 dark:text-amber-500 mt-1">
                 Currently showing sample data as the server is unavailable.
               </p>
@@ -535,64 +591,78 @@ export default function SalesAnalytics() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-blue-700 dark:text-blue-400">Total Orders</CardTitle>
+            <CardTitle className="text-sm font-medium text-blue-700 dark:text-blue-400">
+              Total Orders
+            </CardTitle>
             <div className="p-2 rounded-full bg-blue-500/20">
               <Package className="h-4 w-4 text-blue-600 dark:text-blue-400" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-blue-800 dark:text-blue-300">{salesData.orders.total}</div>
+            <div className="text-3xl font-bold text-blue-800 dark:text-blue-300">
+              {salesData.orders.total}
+            </div>
             <p className="text-xs text-blue-600 dark:text-blue-400">
               All time orders
             </p>
           </CardContent>
         </Card>
-        
+
         <Card className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/30 dark:to-green-800/30">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-green-700 dark:text-green-400">Completed Orders</CardTitle>
+            <CardTitle className="text-sm font-medium text-green-700 dark:text-green-400">
+              Completed Orders
+            </CardTitle>
             <div className="p-2 rounded-full bg-green-500/20">
               <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-green-800 dark:text-green-300">{salesData.orders.completed}</div>
+            <div className="text-3xl font-bold text-green-800 dark:text-green-300">
+              {salesData.orders.completed}
+            </div>
             <p className="text-xs text-green-600 dark:text-green-400">
-              {salesData.orders.total > 0 ? 
-                `${((salesData.orders.completed / salesData.orders.total) * 100).toFixed(1)}% completion rate` : 
-                'No orders'
-              }
+              {salesData.orders.total > 0
+                ? `${((salesData.orders.completed / salesData.orders.total) * 100).toFixed(1)}% completion rate`
+                : "No orders"}
             </p>
           </CardContent>
         </Card>
-        
+
         <Card className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/30 dark:to-red-800/30">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-red-700 dark:text-red-400">Canceled Orders</CardTitle>
+            <CardTitle className="text-sm font-medium text-red-700 dark:text-red-400">
+              Canceled Orders
+            </CardTitle>
             <div className="p-2 rounded-full bg-red-500/20">
               <XCircle className="h-4 w-4 text-red-600 dark:text-red-400" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-red-800 dark:text-red-300">{salesData.orders.canceled}</div>
+            <div className="text-3xl font-bold text-red-800 dark:text-red-300">
+              {salesData.orders.canceled}
+            </div>
             <p className="text-xs text-red-600 dark:text-red-400">
-              {salesData.orders.total > 0 ? 
-                `${((salesData.orders.canceled / salesData.orders.total) * 100).toFixed(1)}% cancellation rate` : 
-                'No orders'
-              }
+              {salesData.orders.total > 0
+                ? `${((salesData.orders.canceled / salesData.orders.total) * 100).toFixed(1)}% cancellation rate`
+                : "No orders"}
             </p>
           </CardContent>
         </Card>
-        
+
         <Card className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/30 dark:to-purple-800/30">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-purple-700 dark:text-purple-400">Avg Order Value</CardTitle>
+            <CardTitle className="text-sm font-medium text-purple-700 dark:text-purple-400">
+              Avg Order Value
+            </CardTitle>
             <div className="p-2 rounded-full bg-purple-500/20">
               <IndianRupee className="h-4 w-4 text-purple-600 dark:text-purple-400" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-purple-800 dark:text-purple-300">₹{salesData.orders.avgOrderValue}</div>
+            <div className="text-3xl font-bold text-purple-800 dark:text-purple-300">
+              ₹{salesData.orders.avgOrderValue}
+            </div>
             <p className="text-xs text-purple-600 dark:text-purple-400">
               Average per completed order
             </p>
@@ -608,7 +678,7 @@ export default function SalesAnalytics() {
           </div>
           <h2 className="text-2xl font-bold">Revenue Trends</h2>
         </div>
-        
+
         <div className="grid gap-6 md:grid-cols-2">
           {/* Monthly Revenue */}
           <Card className="border-0 shadow-xl">
@@ -619,27 +689,33 @@ export default function SalesAnalytics() {
                   Monthly Revenue
                 </CardTitle>
                 {salesData.revenue.monthly.labels.length > 0 && (
-                  <Badge variant={salesData.revenue.monthly.growth >= 0 ? "default" : "destructive"} className={salesData.revenue.monthly.growth >= 0 ? "bg-green-500 hover:bg-green-600" : "bg-red-500 hover:bg-red-600"}>
+                  <Badge
+                    variant={
+                      salesData.revenue.monthly.growth >= 0
+                        ? "default"
+                        : "destructive"
+                    }
+                    className={
+                      salesData.revenue.monthly.growth >= 0
+                        ? "bg-green-500 hover:bg-green-600"
+                        : "bg-red-500 hover:bg-red-600"
+                    }
+                  >
                     {getGrowthIcon(salesData.revenue.monthly.growth)}
                     {Math.abs(salesData.revenue.monthly.growth).toFixed(1)}%
                   </Badge>
                 )}
               </div>
               <CardDescription>
-                {salesData.revenue.monthly.labels.length > 0 ? (
-                  `Revenue comparison: ₹${salesData.revenue.monthly.currentMonth.toLocaleString()} vs ₹${salesData.revenue.monthly.previousMonth.toLocaleString()} previous month`
-                ) : (
-                  "No revenue data available"
-                )}
+                {salesData.revenue.monthly.labels.length > 0
+                  ? `Revenue comparison: ₹${salesData.revenue.monthly.currentMonth.toLocaleString()} vs ₹${salesData.revenue.monthly.previousMonth.toLocaleString()} previous month`
+                  : "No revenue data available"}
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="h-80">
                 {salesData.revenue.monthly.data.length > 0 ? (
-                  <Bar 
-                    data={monthlyRevenueData}
-                    options={barChartOptions}
-                  />
+                  <Bar data={monthlyRevenueData} options={barChartOptions} />
                 ) : (
                   <div className="flex items-center justify-center h-full text-muted-foreground">
                     No monthly revenue data available
@@ -658,27 +734,33 @@ export default function SalesAnalytics() {
                   Weekly Revenue Trend
                 </CardTitle>
                 {salesData.revenue.weekly.labels.length > 0 && (
-                  <Badge variant={salesData.revenue.weekly.growth >= 0 ? "default" : "destructive"} className={salesData.revenue.weekly.growth >= 0 ? "bg-green-500 hover:bg-green-600" : "bg-red-500 hover:bg-red-600"}>
+                  <Badge
+                    variant={
+                      salesData.revenue.weekly.growth >= 0
+                        ? "default"
+                        : "destructive"
+                    }
+                    className={
+                      salesData.revenue.weekly.growth >= 0
+                        ? "bg-green-500 hover:bg-green-600"
+                        : "bg-red-500 hover:bg-red-600"
+                    }
+                  >
                     {getGrowthIcon(salesData.revenue.weekly.growth)}
                     {Math.abs(salesData.revenue.weekly.growth).toFixed(1)}%
                   </Badge>
                 )}
               </div>
               <CardDescription>
-                {salesData.revenue.weekly.labels.length > 0 ? (
-                  `Current week: ₹${salesData.revenue.weekly.currentWeek.toLocaleString()}`
-                ) : (
-                  "No weekly revenue data available"
-                )}
+                {salesData.revenue.weekly.labels.length > 0
+                  ? `Current week: ₹${salesData.revenue.weekly.currentWeek.toLocaleString()}`
+                  : "No weekly revenue data available"}
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="h-80">
                 {salesData.revenue.weekly.data.length > 0 ? (
-                  <Line 
-                    data={weeklyRevenueData}
-                    options={lineChartOptions}
-                  />
+                  <Line data={weeklyRevenueData} options={lineChartOptions} />
                 ) : (
                   <div className="flex items-center justify-center h-full text-muted-foreground">
                     No weekly revenue data available
@@ -714,10 +796,7 @@ export default function SalesAnalytics() {
             <CardContent>
               <div className="h-80">
                 {salesData.orders.daily.data.length > 0 ? (
-                  <Line 
-                    data={dailyOrdersData}
-                    options={lineChartOptions}
-                  />
+                  <Line data={dailyOrdersData} options={lineChartOptions} />
                 ) : (
                   <div className="flex items-center justify-center h-full text-muted-foreground">
                     No daily order data available
@@ -739,8 +818,9 @@ export default function SalesAnalytics() {
             </CardHeader>
             <CardContent>
               <div className="h-80">
-                {salesData.orders.distribution.completed > 0 || salesData.orders.distribution.canceled > 0 ? (
-                  <Pie 
+                {salesData.orders.distribution.completed > 0 ||
+                salesData.orders.distribution.canceled > 0 ? (
+                  <Pie
                     data={ordersDistributionData}
                     options={pieChartOptions}
                   />
@@ -752,12 +832,20 @@ export default function SalesAnalytics() {
               </div>
               <div className="grid grid-cols-2 gap-4 mt-4">
                 <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg">
-                  <p className="text-sm text-green-600 dark:text-green-400">Completed</p>
-                  <p className="text-2xl font-bold text-green-800 dark:text-green-300">{salesData.orders.distribution.completed}</p>
+                  <p className="text-sm text-green-600 dark:text-green-400">
+                    Completed
+                  </p>
+                  <p className="text-2xl font-bold text-green-800 dark:text-green-300">
+                    {salesData.orders.distribution.completed}
+                  </p>
                 </div>
                 <div className="bg-red-50 dark:bg-red-900/20 p-3 rounded-lg">
-                  <p className="text-sm text-red-600 dark:text-red-400">Canceled</p>
-                  <p className="text-2xl font-bold text-red-800 dark:text-red-300">{salesData.orders.distribution.canceled}</p>
+                  <p className="text-sm text-red-600 dark:text-red-400">
+                    Canceled
+                  </p>
+                  <p className="text-2xl font-bold text-red-800 dark:text-red-300">
+                    {salesData.orders.distribution.canceled}
+                  </p>
                 </div>
               </div>
             </CardContent>
@@ -770,16 +858,15 @@ export default function SalesAnalytics() {
                   <BarChart3 className="h-5 w-5 text-orange-500" />
                   Orders per Week (Last 12 Weeks)
                 </CardTitle>
-                <Badge className="bg-orange-500 hover:bg-orange-600">Trend</Badge>
+                <Badge className="bg-orange-500 hover:bg-orange-600">
+                  Trend
+                </Badge>
               </div>
             </CardHeader>
             <CardContent>
               <div className="h-80">
                 {salesData.orders.weekly.data.length > 0 ? (
-                  <Bar 
-                    data={weeklyOrdersData}
-                    options={barChartOptions}
-                  />
+                  <Bar data={weeklyOrdersData} options={barChartOptions} />
                 ) : (
                   <div className="flex items-center justify-center h-full text-muted-foreground">
                     No weekly order data available
@@ -799,23 +886,35 @@ export default function SalesAnalytics() {
           </div>
           <h2 className="text-2xl font-bold">Product Analytics</h2>
         </div>
-        
+
         <div className="bg-gradient-to-r from-gray-50 to-white dark:from-gray-900 dark:to-gray-800 rounded-xl p-1">
           <Tabs defaultValue="topSelling" className="space-y-4">
             <TabsList className="grid grid-cols-4 mb-6 bg-transparent">
-              <TabsTrigger value="topSelling" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-600 data-[state=active]:text-white">
+              <TabsTrigger
+                value="topSelling"
+                className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-600 data-[state=active]:text-white"
+              >
                 <Crown className="h-4 w-4 mr-2" />
                 Top Selling
               </TabsTrigger>
-              <TabsTrigger value="weeklyComparison" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-600 data-[state=active]:text-white">
+              <TabsTrigger
+                value="weeklyComparison"
+                className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-600 data-[state=active]:text-white"
+              >
                 <BarChart3 className="h-4 w-4 mr-2" />
                 Comparison
               </TabsTrigger>
-              <TabsTrigger value="lowSelling" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-red-500 data-[state=active]:to-orange-600 data-[state=active]:text-white">
+              <TabsTrigger
+                value="lowSelling"
+                className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-red-500 data-[state=active]:to-orange-600 data-[state=active]:text-white"
+              >
                 <AlertTriangle className="h-4 w-4 mr-2" />
                 Low Selling
               </TabsTrigger>
-              <TabsTrigger value="categories" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-500 data-[state=active]:to-emerald-600 data-[state=active]:text-white">
+              <TabsTrigger
+                value="categories"
+                className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-500 data-[state=active]:to-emerald-600 data-[state=active]:text-white"
+              >
                 <Target className="h-4 w-4 mr-2" />
                 Categories
               </TabsTrigger>
@@ -830,23 +929,35 @@ export default function SalesAnalytics() {
                         <Award className="h-5 w-5 text-yellow-500" />
                         All Time Top Sellers
                       </CardTitle>
-                      <Badge className="bg-yellow-500 hover:bg-yellow-600">Gold</Badge>
+                      <Badge className="bg-yellow-500 hover:bg-yellow-600">
+                        Gold
+                      </Badge>
                     </div>
                   </CardHeader>
                   <CardContent>
                     {salesData.products.topSelling.allTime.length > 0 ? (
                       <div className="space-y-4">
-                        {salesData.products.topSelling.allTime.slice(0, 5).map((product, index) => (
-                          <div key={index} className="flex items-center justify-between p-3 bg-gradient-to-r from-gray-50 to-white dark:from-gray-800 dark:to-gray-900 rounded-lg hover:shadow-sm transition-shadow">
-                            <div>
-                              <p className="font-medium">{product.name}</p>
-                              <p className="text-sm text-muted-foreground">{product.sales} sales</p>
+                        {salesData.products.topSelling.allTime
+                          .slice(0, 5)
+                          .map((product, index) => (
+                            <div
+                              key={index}
+                              className="flex items-center justify-between p-3 bg-gradient-to-r from-gray-50 to-white dark:from-gray-800 dark:to-gray-900 rounded-lg hover:shadow-sm transition-shadow"
+                            >
+                              <div>
+                                <p className="font-medium">{product.name}</p>
+                                <p className="text-sm text-muted-foreground">
+                                  {product.sales} sales
+                                </p>
+                              </div>
+                              <Badge
+                                variant="secondary"
+                                className="bg-gradient-to-r from-yellow-500/20 to-yellow-600/20 text-yellow-700 dark:text-yellow-400"
+                              >
+                                ₹{product.revenue.toLocaleString()}
+                              </Badge>
                             </div>
-                            <Badge variant="secondary" className="bg-gradient-to-r from-yellow-500/20 to-yellow-600/20 text-yellow-700 dark:text-yellow-400">
-                              ₹{product.revenue.toLocaleString()}
-                            </Badge>
-                          </div>
-                        ))}
+                          ))}
                       </div>
                     ) : (
                       <div className="text-center text-muted-foreground py-8">
@@ -863,21 +974,32 @@ export default function SalesAnalytics() {
                         <Calendar className="h-5 w-5 text-blue-500" />
                         Last Month Top Sellers
                       </CardTitle>
-                      <Badge className="bg-blue-500 hover:bg-blue-600">Monthly</Badge>
+                      <Badge className="bg-blue-500 hover:bg-blue-600">
+                        Monthly
+                      </Badge>
                     </div>
                   </CardHeader>
                   <CardContent>
                     {salesData.products.topSelling.lastMonth.length > 0 ? (
                       <div className="space-y-4">
-                        {salesData.products.topSelling.lastMonth.slice(0, 5).map((product, index) => (
-                          <div key={index} className="flex items-center justify-between p-3 bg-gradient-to-r from-blue-50 to-white dark:from-blue-900/10 dark:to-gray-900 rounded-lg">
-                            <div>
-                              <p className="font-medium">{product.name}</p>
-                              <p className="text-sm text-muted-foreground">{product.sales} sales</p>
+                        {salesData.products.topSelling.lastMonth
+                          .slice(0, 5)
+                          .map((product, index) => (
+                            <div
+                              key={index}
+                              className="flex items-center justify-between p-3 bg-gradient-to-r from-blue-50 to-white dark:from-blue-900/10 dark:to-gray-900 rounded-lg"
+                            >
+                              <div>
+                                <p className="font-medium">{product.name}</p>
+                                <p className="text-sm text-muted-foreground">
+                                  {product.sales} sales
+                                </p>
+                              </div>
+                              <Badge variant="outline">
+                                ₹{product.revenue.toLocaleString()}
+                              </Badge>
                             </div>
-                            <Badge variant="outline">₹{product.revenue.toLocaleString()}</Badge>
-                          </div>
-                        ))}
+                          ))}
                       </div>
                     ) : (
                       <div className="text-center text-muted-foreground py-8">
@@ -894,21 +1016,32 @@ export default function SalesAnalytics() {
                         <Calendar className="h-5 w-5 text-green-500" />
                         Last Week Top Sellers
                       </CardTitle>
-                      <Badge className="bg-green-500 hover:bg-green-600">Weekly</Badge>
+                      <Badge className="bg-green-500 hover:bg-green-600">
+                        Weekly
+                      </Badge>
                     </div>
                   </CardHeader>
                   <CardContent>
                     {salesData.products.topSelling.lastWeek.length > 0 ? (
                       <div className="space-y-4">
-                        {salesData.products.topSelling.lastWeek.slice(0, 5).map((product, index) => (
-                          <div key={index} className="flex items-center justify-between p-3 bg-gradient-to-r from-green-50 to-white dark:from-green-900/10 dark:to-gray-900 rounded-lg">
-                            <div>
-                              <p className="font-medium">{product.name}</p>
-                              <p className="text-sm text-muted-foreground">{product.sales} sales</p>
+                        {salesData.products.topSelling.lastWeek
+                          .slice(0, 5)
+                          .map((product, index) => (
+                            <div
+                              key={index}
+                              className="flex items-center justify-between p-3 bg-gradient-to-r from-green-50 to-white dark:from-green-900/10 dark:to-gray-900 rounded-lg"
+                            >
+                              <div>
+                                <p className="font-medium">{product.name}</p>
+                                <p className="text-sm text-muted-foreground">
+                                  {product.sales} sales
+                                </p>
+                              </div>
+                              <Badge variant="outline">
+                                ₹{product.revenue.toLocaleString()}
+                              </Badge>
                             </div>
-                            <Badge variant="outline">₹{product.revenue.toLocaleString()}</Badge>
-                          </div>
-                        ))}
+                          ))}
                       </div>
                     ) : (
                       <div className="text-center text-muted-foreground py-8">
@@ -928,7 +1061,9 @@ export default function SalesAnalytics() {
                       <BarChart3 className="h-5 w-5 text-purple-500" />
                       Top 5 Products: This Week vs Last Week
                     </CardTitle>
-                    <Badge className="bg-purple-500 hover:bg-purple-600">Comparison</Badge>
+                    <Badge className="bg-purple-500 hover:bg-purple-600">
+                      Comparison
+                    </Badge>
                   </div>
                   <CardDescription>
                     Compare product performance week over week
@@ -936,8 +1071,9 @@ export default function SalesAnalytics() {
                 </CardHeader>
                 <CardContent>
                   <div className="h-96">
-                    {salesData.products.weeklyComparison.currentWeek.length > 0 ? (
-                      <Bar 
+                    {salesData.products.weeklyComparison.currentWeek.length >
+                    0 ? (
+                      <Bar
                         data={weeklyComparisonData}
                         options={barChartOptions}
                       />
@@ -960,15 +1096,21 @@ export default function SalesAnalytics() {
                       Low Selling Items
                     </CardTitle>
                     <div className="flex items-center gap-2">
-                      <span className="text-sm text-muted-foreground">Threshold:</span>
+                      <span className="text-sm text-muted-foreground">
+                        Threshold:
+                      </span>
                       <input
                         type="number"
                         value={lowSalesThreshold}
-                        onChange={(e) => setLowSalesThreshold(Number(e.target.value))}
+                        onChange={(e) =>
+                          setLowSalesThreshold(Number(e.target.value))
+                        }
                         className="w-20 px-2 py-1 border rounded text-sm bg-white dark:bg-gray-800"
                         min="1"
                       />
-                      <span className="text-sm text-muted-foreground">orders</span>
+                      <span className="text-sm text-muted-foreground">
+                        orders
+                      </span>
                     </div>
                   </div>
                   <CardDescription>
@@ -979,15 +1121,22 @@ export default function SalesAnalytics() {
                   {salesData.products.lowSelling.length > 0 ? (
                     <div className="space-y-4">
                       {salesData.products.lowSelling
-                        .filter(product => product.orders < lowSalesThreshold)
+                        .filter((product) => product.orders < lowSalesThreshold)
                         .map((product, index) => (
-                          <div key={index} className="flex items-center justify-between p-3 bg-gradient-to-r from-gray-50 to-white dark:from-gray-800 dark:to-gray-900 rounded-lg border hover:shadow-sm transition-shadow">
+                          <div
+                            key={index}
+                            className="flex items-center justify-between p-3 bg-gradient-to-r from-gray-50 to-white dark:from-gray-800 dark:to-gray-900 rounded-lg border hover:shadow-sm transition-shadow"
+                          >
                             <div className="flex items-center gap-3">
-                              <div className={`p-2 rounded-lg ${
-                                product.suggestion === 'hide' ? 'bg-red-500/20' :
-                                product.suggestion === 'replace' ? 'bg-amber-500/20' :
-                                'bg-green-500/20'
-                              }`}>
+                              <div
+                                className={`p-2 rounded-lg ${
+                                  product.suggestion === "hide"
+                                    ? "bg-red-500/20"
+                                    : product.suggestion === "replace"
+                                      ? "bg-amber-500/20"
+                                      : "bg-green-500/20"
+                                }`}
+                              >
                                 {getSuggestionIcon(product.suggestion)}
                               </div>
                               <div>
@@ -998,7 +1147,11 @@ export default function SalesAnalytics() {
                               </div>
                             </div>
                             <div className="flex items-center gap-2">
-                              <Badge className={getSuggestionColor(product.suggestion)}>
+                              <Badge
+                                className={getSuggestionColor(
+                                  product.suggestion
+                                )}
+                              >
                                 {getSuggestionIcon(product.suggestion)}
                                 {product.suggestion}
                               </Badge>
@@ -1023,7 +1176,9 @@ export default function SalesAnalytics() {
                       <PieChart className="h-5 w-5 text-green-500" />
                       Category Performance
                     </CardTitle>
-                    <Badge className="bg-green-500 hover:bg-green-600">Analysis</Badge>
+                    <Badge className="bg-green-500 hover:bg-green-600">
+                      Analysis
+                    </Badge>
                   </div>
                   <CardDescription>
                     Revenue distribution across menu categories
@@ -1032,10 +1187,10 @@ export default function SalesAnalytics() {
                 <CardContent>
                   <div className="grid gap-6 md:grid-cols-2">
                     <div className="h-80">
-                      {salesData.products.categories.drinks > 0 || 
-                       salesData.products.categories.snacks > 0 || 
-                       salesData.products.categories.meals > 0 ? (
-                        <Pie 
+                      {salesData.products.categories.drinks > 0 ||
+                      salesData.products.categories.snacks > 0 ||
+                      salesData.products.categories.meals > 0 ? (
+                        <Pie
                           data={categoryPerformanceData}
                           options={pieChartOptions}
                         />
@@ -1051,21 +1206,36 @@ export default function SalesAnalytics() {
                           <Coffee className="h-5 w-5 text-blue-600" />
                           <span className="font-medium">Drinks</span>
                         </div>
-                        <Badge variant="secondary" className="bg-blue-500/20 text-blue-700 dark:text-blue-400">{salesData.products.categories.drinks}%</Badge>
+                        <Badge
+                          variant="secondary"
+                          className="bg-blue-500/20 text-blue-700 dark:text-blue-400"
+                        >
+                          {salesData.products.categories.drinks}%
+                        </Badge>
                       </div>
                       <div className="flex items-center justify-between p-3 bg-gradient-to-r from-amber-50 to-amber-100 dark:from-amber-900/20 dark:to-amber-800/20 rounded-lg">
                         <div className="flex items-center gap-3">
                           <Utensils className="h-5 w-5 text-amber-600" />
                           <span className="font-medium">Snacks</span>
                         </div>
-                        <Badge variant="secondary" className="bg-amber-500/20 text-amber-700 dark:text-amber-400">{salesData.products.categories.snacks}%</Badge>
+                        <Badge
+                          variant="secondary"
+                          className="bg-amber-500/20 text-amber-700 dark:text-amber-400"
+                        >
+                          {salesData.products.categories.snacks}%
+                        </Badge>
                       </div>
                       <div className="flex items-center justify-between p-3 bg-gradient-to-r from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 rounded-lg">
                         <div className="flex items-center gap-3">
                           <Pizza className="h-5 w-5 text-green-600" />
                           <span className="font-medium">Meals</span>
                         </div>
-                        <Badge variant="secondary" className="bg-green-500/20 text-green-700 dark:text-green-400">{salesData.products.categories.meals}%</Badge>
+                        <Badge
+                          variant="secondary"
+                          className="bg-green-500/20 text-green-700 dark:text-green-400"
+                        >
+                          {salesData.products.categories.meals}%
+                        </Badge>
                       </div>
                     </div>
                   </div>

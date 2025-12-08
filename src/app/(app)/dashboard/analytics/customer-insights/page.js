@@ -1,7 +1,7 @@
 ///dashboard/analytics/customer-insights/page.js
 "use client"
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
@@ -124,9 +124,9 @@ export default function CustomerInsights() {
 
   useEffect(() => {
     fetchCustomerData();
-  }, [timeRange]);
+  }, [fetchCustomerData]);
 
-  const fetchCustomerData = async () => {
+  const fetchCustomerData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -147,7 +147,7 @@ export default function CustomerInsights() {
     } finally {
       setLoading(false);
     }
-  };
+  },[timeRange]);
 
   if (loading) {
     return (

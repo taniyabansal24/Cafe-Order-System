@@ -25,6 +25,16 @@ import {
   Mail,
 } from "lucide-react";
 
+// Define your preferred category order here
+  const preferredCategoryOrder = [
+    "Pizza",
+    "Burger",
+    "Pasta & Noodles",
+    "Drinks",
+    "Desserts",
+    "Snacks",
+  ];
+
 // Load Razorpay script dynamically
 const loadRazorpayScript = (src) => {
   return new Promise((resolve) => {
@@ -292,16 +302,6 @@ export default function OrderPage() {
       throw error;
     }
   };
-
-  // Define your preferred category order here
-  const preferredCategoryOrder = [
-    "Pizza",
-    "Burger",
-    "Pasta & Noodles",
-    "Drinks",
-    "Desserts",
-    "Snacks",
-  ];
 
   useEffect(() => {
     const fetchMenuAndCafe = async () => {

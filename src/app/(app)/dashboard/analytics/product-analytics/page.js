@@ -1,7 +1,7 @@
 // analytics/product-analytics/page.js
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Card,
   CardContent,
@@ -258,9 +258,9 @@ export default function ProductAnalytics() {
 
   useEffect(() => {
     fetchProductData();
-  }, [timeRange]);
+  }, [fetchProductData]);
 
-  const fetchProductData = async () => {
+  const fetchProductData = useCallback (async () => {
     try {
       setLoading(true);
       setError(null);
@@ -288,7 +288,7 @@ export default function ProductAnalytics() {
     } finally {
       setLoading(false);
     }
-  };
+  },[timeRange]);
 
   if (loading) {
     return (
@@ -300,7 +300,7 @@ export default function ProductAnalytics() {
         </p>
       </div>
     );
-  }
+  };
 
   // Check if there's actual data
   const hasActualData =

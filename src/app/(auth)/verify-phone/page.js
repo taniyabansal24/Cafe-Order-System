@@ -7,8 +7,10 @@ import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
+import { withSearchParams } from "@/components/WithSearchParams";
 
-export default function VerifyPhonePage() {
+
+function VerifyPhoneContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -96,7 +98,7 @@ export default function VerifyPhonePage() {
         <div className="text-center space-y-2">
           <h2 className="text-2xl font-bold">Verify Your Phone</h2>
           <p className="text-gray-600">
-            We've sent a 6-digit code to your phone:
+            We&apos;ve sent a 6-digit code to your phone:
             <br />
             <strong>{phone}</strong>
           </p>
@@ -152,3 +154,7 @@ export default function VerifyPhonePage() {
     </div>
   );
 }
+
+// Wrap the component with withSearchParams
+export default withSearchParams(VerifyPhoneContent);
+

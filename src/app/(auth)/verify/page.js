@@ -6,11 +6,11 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import axios from "axios";
-
+import { withSearchParams } from "@/components/WithSearchParams"; // Import the wrapper
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
-export default function VerifyPage() {
+function VerifyContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   
@@ -253,3 +253,6 @@ const resendPhoneOtp = async () => {
     </div>
   );
 }
+
+// Wrap with withSearchParams
+export default withSearchParams(VerifyContent);

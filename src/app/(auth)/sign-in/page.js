@@ -263,7 +263,7 @@ export default function SignInPage() {
 
                     <div className="text-center">
                       <p className="text-sm text-muted-foreground">
-                        Don't have an account?{" "}
+                       Don&apos;t have an account?
                         <Link
                           href="/sign-up"
                           className="font-semibold text-primary hover:text-primary/80 underline"
@@ -357,7 +357,7 @@ export default function SignInPage() {
                   </div>
                   <div>
                     <p className="text-lg italic mb-4">
-                      "CafeFlow transformed our operations. We've seen a 40% increase in efficiency since we started using it."
+                      &quot;CafeFlow transformed our operations. We&apos;ve seen a 40% increase in efficiency since we started using it.&quot;
                     </p>
                     <div>
                       <p className="font-semibold">Rahul Sharma</p>
