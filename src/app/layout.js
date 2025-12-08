@@ -1,17 +1,13 @@
-import { Geist, Geist_Mono } from "next/font/google";
+// layout.js
+import { Inter } from "next/font/google";
 import "./globals.css";
 import AuthProvider from "@/context/AuthProvider";
 import { Toaster } from "@/components/ui/sonner"
-import ThemeWrapper from "@/components/theme-wrapper"; // Fixed import
+import ThemeWrapper from "@/components/theme-wrapper";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const inter = Inter({
   subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+  variable: "--font-inter",  // This matches the CSS variable above
 });
 
 export const metadata = {
@@ -23,7 +19,7 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${inter.variable} font-sans antialiased`}
       >
         <AuthProvider>
           <ThemeWrapper>
