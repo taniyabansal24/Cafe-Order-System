@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { useSession } from "next-auth/react";
-import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
@@ -104,18 +103,12 @@ export default function GenerateQrPage() {
 
           {qrUrl ? (
             <div className="flex flex-col items-center gap-4 mt-6">
-              {/* Use Next/Image for better LCP behavior (unoptimized for external URL) */}
-              <div className="w-56 h-56 relative rounded-xl overflow-hidden shadow-md border border-border">
-                <Image
-                  src={qrUrl}
-                  alt="Menu QR Code"
-                  fill
-                  sizes="224px"
-                  style={{ objectFit: "cover" }}
-                  unoptimized
-                />
-              </div>
-
+              <img
+                src={qrUrl}
+                alt="Menu QR Code"
+                className="w-56 h-56 rounded-xl shadow-md border border-border"
+              />
+              
               <div className="text-center">
                 <p className="text-sm text-green-600 dark:text-green-400 mb-2">
                   ✓ QR code points to: <strong className="text-foreground">{window.location.origin}/order</strong>

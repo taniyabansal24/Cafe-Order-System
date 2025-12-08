@@ -8,14 +8,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { toast } from "sonner";
-import {
-  Loader2,
-  Coffee,
-  ArrowRight,
-  Shield,
-  Smartphone,
-  Users,
-} from "lucide-react";
+import { Loader2, Coffee, ArrowRight, Shield, Smartphone, Users } from "lucide-react";
 import Link from "next/link";
 import { gsap } from "gsap";
 
@@ -29,13 +22,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
 import { signInSchema } from "@/schemas/signInSchema";
@@ -53,7 +40,7 @@ export default function SignInPage() {
     // Initial state - elements start hidden
     gsap.set(".animate-in", {
       opacity: 0,
-      y: 20,
+      y: 20
     });
 
     gsap.set(logoRef.current, {
@@ -95,7 +82,7 @@ export default function SignInPage() {
         y: 0,
         duration: 0.8,
         stagger: 0.1,
-        ease: "power3.out",
+        ease: "power3.out"
       });
 
     return () => {
@@ -154,9 +141,7 @@ export default function SignInPage() {
               </span>
             </Link>
             <div className="flex items-center space-x-4">
-              <span className="text-sm hidden sm:inline text-muted-foreground">
-                New to CafeFlow?
-              </span>
+              <span className="text-sm hidden sm:inline text-muted-foreground">New to CafeFlow?</span>
               <Link href="/sign-up">
                 <Button variant="outline">Get Started Free</Button>
               </Link>
@@ -184,7 +169,7 @@ export default function SignInPage() {
                   CafeFlow
                 </h1>
               </div>
-
+              
               <h2 className="text-4xl font-bold mb-4 animate-in">
                 Welcome Back
               </h2>
@@ -199,28 +184,21 @@ export default function SignInPage() {
 
             <Card className="border-2 animate-in">
               <CardHeader>
-                <CardTitle className="text-2xl">
-                  Sign in to your account
-                </CardTitle>
+                <CardTitle className="text-2xl">Sign in to your account</CardTitle>
                 <CardDescription>
                   Enter your credentials to access the dashboard
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <Form {...form}>
-                  <form
-                    onSubmit={form.handleSubmit(onSubmit)}
-                    className="space-y-6"
-                  >
+                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                     {/* Email field */}
                     <FormField
                       name="email"
                       control={form.control}
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-foreground">
-                            Email
-                          </FormLabel>
+                          <FormLabel className="text-foreground">Email</FormLabel>
                           <FormControl>
                             <Input
                               type="email"
@@ -242,9 +220,7 @@ export default function SignInPage() {
                       render={({ field }) => (
                         <FormItem>
                           <div className="flex items-center justify-between">
-                            <FormLabel className="text-foreground">
-                              Password
-                            </FormLabel>
+                            <FormLabel className="text-foreground">Password</FormLabel>
                             <Link
                               href="/forgot-password"
                               className="text-sm text-primary hover:text-primary/80 underline"
@@ -267,9 +243,9 @@ export default function SignInPage() {
                     />
 
                     {/* Submit Button */}
-                    <Button
-                      type="submit"
-                      disabled={isSubmitting}
+                    <Button 
+                      type="submit" 
+                      disabled={isSubmitting} 
                       className="w-full h-12 text-lg bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90"
                     >
                       {isSubmitting ? (
@@ -287,7 +263,7 @@ export default function SignInPage() {
 
                     <div className="text-center">
                       <p className="text-sm text-muted-foreground">
-                        Don&apos;t have an account?{" "}
+                        Don't have an account?{" "}
                         <Link
                           href="/sign-up"
                           className="font-semibold text-primary hover:text-primary/80 underline"
@@ -324,8 +300,7 @@ export default function SignInPage() {
                 </CardHeader>
                 <CardContent>
                   <p className="text-muted-foreground">
-                    Track orders live from any device. Get instant notifications
-                    for new orders.
+                    Track orders live from any device. Get instant notifications for new orders.
                   </p>
                 </CardContent>
               </Card>
@@ -339,8 +314,7 @@ export default function SignInPage() {
                 </CardHeader>
                 <CardContent>
                   <p className="text-muted-foreground">
-                    Understand customer behavior with detailed analytics and
-                    feedback.
+                    Understand customer behavior with detailed analytics and feedback.
                   </p>
                 </CardContent>
               </Card>
@@ -368,8 +342,7 @@ export default function SignInPage() {
                 </CardHeader>
                 <CardContent>
                   <p className="text-muted-foreground">
-                    Easily update your menu, prices, and special offers in
-                    real-time.
+                    Easily update your menu, prices, and special offers in real-time.
                   </p>
                 </CardContent>
               </Card>
@@ -384,16 +357,11 @@ export default function SignInPage() {
                   </div>
                   <div>
                     <p className="text-lg italic mb-4">
-                      &quot;CafeFlow transformed our operations. We&apos;ve seen
-                      a 40% increase in efficiency since we started using
-                      it.&quot;
+                      "CafeFlow transformed our operations. We've seen a 40% increase in efficiency since we started using it."
                     </p>
-
                     <div>
                       <p className="font-semibold">Rahul Sharma</p>
-                      <p className="text-sm text-muted-foreground">
-                        Owner, Urban Brew Cafe
-                      </p>
+                      <p className="text-sm text-muted-foreground">Owner, Urban Brew Cafe</p>
                     </div>
                   </div>
                 </div>
@@ -443,8 +411,7 @@ export default function SignInPage() {
           </div>
           <div className="mt-8 pt-8 border-t border-gray-200 dark:border-gray-800 text-center text-gray-600 dark:text-gray-400">
             <p>
-              © 2024 CafeFlow. All rights reserved. Built with ❤️ for cafe
-              owners worldwide.
+              © 2024 CafeFlow. All rights reserved. Built with ❤️ for cafe owners worldwide.
             </p>
           </div>
         </div>

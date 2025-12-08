@@ -103,6 +103,7 @@ const features = [
   },
 ];
 
+
 const steps = [
   {
     number: "01",
@@ -926,7 +927,7 @@ export default function HomePage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">
-                    Today&apos;s Revenue
+                    Today's Revenue
                   </p>
                   <p className="text-3xl font-bold text-green-600">₹24,850</p>
                 </div>
@@ -1029,10 +1030,7 @@ export default function HomePage() {
                       />
                     ))}
                   </div>
-                  <p className="text-lg mb-6 italic">
-                    &quot;{testimonial.content}&quot;
-                  </p>
-
+                  <p className="text-lg mb-6 italic">"{testimonial.content}"</p>
                   <div className="flex items-center space-x-3">
                     <Avatar>
                       <AvatarFallback className="bg-primary/10">

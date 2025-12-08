@@ -1,7 +1,7 @@
 ///dashboard/analytics/customer-insights/page.js
 "use client"
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
@@ -122,8 +122,11 @@ export default function CustomerInsights() {
   const [useMockData, setUseMockData] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
 
-  // make fetchCustomerData stable so useEffect can depend on it
-  const fetchCustomerData = useCallback(async () => {
+  useEffect(() => {
+    fetchCustomerData();
+  }, [timeRange]);
+
+  const fetchCustomerData = async () => {
     try {
       setLoading(true);
       setError(null);
@@ -144,12 +147,7 @@ export default function CustomerInsights() {
     } finally {
       setLoading(false);
     }
-  }, [timeRange]); // only re-create when timeRange changes
-
-  // call stable function from effect
-  useEffect(() => {
-    fetchCustomerData();
-  }, [fetchCustomerData]);
+  };
 
   if (loading) {
     return (

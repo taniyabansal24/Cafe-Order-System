@@ -1,7 +1,7 @@
 // analytics/product-analytics/page.js
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -256,8 +256,11 @@ export default function ProductAnalytics() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterCategory, setFilterCategory] = useState("all");
 
-  // make fetchProductData stable so useEffect can depend on it
-  const fetchProductData = useCallback(async () => {
+  useEffect(() => {
+    fetchProductData();
+  }, [timeRange]);
+
+  const fetchProductData = async () => {
     try {
       setLoading(true);
       setError(null);
@@ -285,11 +288,7 @@ export default function ProductAnalytics() {
     } finally {
       setLoading(false);
     }
-  }, [timeRange]); // re-create only when timeRange changes
-
-  useEffect(() => {
-    fetchProductData();
-  }, [fetchProductData]);
+  };
 
   if (loading) {
     return (
@@ -569,8 +568,8 @@ export default function ProductAnalytics() {
     }
   };
 
-  // Filter products based on search and category (guard productData when null)
-  const filteredLowSelling = (productData?.lowSelling || []).filter((product) => {
+  // Filter products based on search and category
+  const filteredLowSelling = productData.lowSelling.filter((product) => {
     const matchesSearch = product.name
       .toLowerCase()
       .includes(searchQuery.toLowerCase());

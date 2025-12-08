@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -24,16 +24,6 @@ import {
   Phone,
   Mail,
 } from "lucide-react";
-
-// Static preferred category order (no hooks needed)
-const preferredCategoryOrder = [
-  "Pizza",
-  "Burger",
-  "Pasta & Noodles",
-  "Drinks",
-  "Desserts",
-  "Snacks",
-];
 
 // Load Razorpay script dynamically
 const loadRazorpayScript = (src) => {
@@ -303,6 +293,15 @@ export default function OrderPage() {
     }
   };
 
+  // Define your preferred category order here
+  const preferredCategoryOrder = [
+    "Pizza",
+    "Burger",
+    "Pasta & Noodles",
+    "Drinks",
+    "Desserts",
+    "Snacks",
+  ];
 
   useEffect(() => {
     const fetchMenuAndCafe = async () => {

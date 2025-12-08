@@ -1,7 +1,7 @@
 // app/(auth)/verify/page.js
 "use client";
 
-import { Suspense, useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
@@ -10,7 +10,7 @@ import axios from "axios";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
-function VerifyContent() {
+export default function VerifyPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   
@@ -60,77 +60,78 @@ function VerifyContent() {
     }
   };
 
-  const verifyPhoneOtp = async () => {
-    if (!phoneOtp || phoneOtp.length !== 6) {
-      toast.error("Please enter a valid 6-digit OTP");
-      return;
+// In your verify page - phone verification section
+const verifyPhoneOtp = async () => {
+  if (!phoneOtp || phoneOtp.length !== 6) {
+    toast.error("Please enter a valid 6-digit OTP");
+    return;
+  }
+
+  setIsSubmitting(true);
+  try {
+    const res = await axios.post("/api/verify-phone-otp", {
+      registrationId: registrationId,
+      code: phoneOtp
+    });
+
+    if (res.data.success) {
+      toast.success("Registration completed successfully! You can now sign in.");
+      router.push("/sign-in");
+    } else {
+      toast.error(res.data.message || "Invalid OTP");
     }
-
-    setIsSubmitting(true);
-    try {
-      const res = await axios.post("/api/verify-phone-otp", {
-        registrationId: registrationId,
-        code: phoneOtp
-      });
-
-      if (res.data.success) {
-        toast.success("Registration completed successfully! You can now sign in.");
-        router.push("/sign-in");
-      } else {
-        toast.error(res.data.message || "Invalid OTP");
-      }
-    } catch (err) {
-      console.error("Phone OTP error:", err.response?.data);
+  } catch (err) {
+    console.error("Phone OTP error:", err.response?.data);
+    
+    // Handle different error types
+    if (err.response?.status === 400) {
+      const errorMsg = err.response.data.message;
       
-      // Handle different error types
-      if (err.response?.status === 400) {
-        const errorMsg = err.response.data.message;
-        
-        if (errorMsg.includes('session expired') || errorMsg.includes('not found')) {
-          toast.error("Session expired. Please sign up again.");
-          router.push("/sign-up");
-        } else if (errorMsg.includes('Invalid OTP')) {
-          toast.error("Invalid OTP. Please check the code and try again.");
-          setPhoneOtp(''); // Clear for retry
-        } else {
-          toast.error(errorMsg);
-        }
+      if (errorMsg.includes('session expired') || errorMsg.includes('not found')) {
+        toast.error("Session expired. Please sign up again.");
+        router.push("/sign-up");
+      } else if (errorMsg.includes('Invalid OTP')) {
+        toast.error("Invalid OTP. Please check the code and try again.");
+        setPhoneOtp(''); // Clear for retry
       } else {
-        toast.error("Phone verification failed. Please try again.");
+        toast.error(errorMsg);
       }
-    } finally {
-      setIsSubmitting(false);
+    } else {
+      toast.error("Phone verification failed. Please try again.");
     }
-  };
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
-  const resendPhoneOtp = async () => {
-    try {
-      const res = await axios.post("/api/send-phone-otp", { 
-        registrationId: registrationId 
-      });
+const resendPhoneOtp = async () => {
+  try {
+    const res = await axios.post("/api/send-phone-otp", { 
+      registrationId: registrationId 
+    });
 
-      if (res.data.success) {
-        toast.success("New OTP sent successfully!");
-      } else {
-        toast.error(res.data.message || "Failed to resend OTP");
-      }
-    } catch (err) {
-      console.error("Resend OTP error:", err.response?.data);
+    if (res.data.success) {
+      toast.success("New OTP sent successfully!");
+    } else {
+      toast.error(res.data.message || "Failed to resend OTP");
+    }
+  } catch (err) {
+    console.error("Resend OTP error:", err.response?.data);
+    
+    if (err.response?.status === 400) {
+      const errorMsg = err.response.data.message;
       
-      if (err.response?.status === 400) {
-        const errorMsg = err.response.data.message;
-        
-        if (errorMsg.includes('not found') || errorMsg.includes('expired')) {
-          toast.error("Session expired. Please sign up again.");
-          router.push("/sign-up");
-        } else {
-          toast.error(errorMsg);
-        }
+      if (errorMsg.includes('not found') || errorMsg.includes('expired')) {
+        toast.error("Session expired. Please sign up again.");
+        router.push("/sign-up");
       } else {
-        toast.error("Failed to resend OTP. Please try again.");
+        toast.error(errorMsg);
       }
+    } else {
+      toast.error("Failed to resend OTP. Please try again.");
     }
-  };
+  }
+};
 
   const resendEmailOtp = async () => {
     try {
@@ -250,17 +251,5 @@ function VerifyContent() {
         )}
       </div>
     </div>
-  );
-}
-
-export default function VerifyPage() {
-  return (
-    <Suspense fallback={
-      <div className="flex justify-center items-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
-    }>
-      <VerifyContent />
-    </Suspense>
   );
 }

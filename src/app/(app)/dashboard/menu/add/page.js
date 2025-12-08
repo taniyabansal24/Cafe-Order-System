@@ -5,7 +5,6 @@ import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import Image from "next/image";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
@@ -188,7 +187,7 @@ export default function AddItemPage() {
               Fill in the details below to add a new item to your menu
             </CardDescription>
           </CardHeader>
-
+          
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Basic Information */}
@@ -203,9 +202,7 @@ export default function AddItemPage() {
                       id="name"
                       placeholder="e.g. Veg Burger"
                       value={item.name}
-                      onChange={(e) =>
-                        setItem({ ...item, name: e.target.value })
-                      }
+                      onChange={(e) => setItem({ ...item, name: e.target.value })}
                       className="bg-white dark:bg-gray-900"
                       required
                     />
@@ -218,9 +215,7 @@ export default function AddItemPage() {
                       id="category"
                       placeholder="e.g. Snacks"
                       value={item.category}
-                      onChange={(e) =>
-                        setItem({ ...item, category: e.target.value })
-                      }
+                      onChange={(e) => setItem({ ...item, category: e.target.value })}
                       className="bg-white dark:bg-gray-900"
                     />
                   </div>
@@ -261,9 +256,7 @@ export default function AddItemPage() {
                         type="number"
                         placeholder="149"
                         value={item.price}
-                        onChange={(e) =>
-                          setItem({ ...item, price: e.target.value })
-                        }
+                        onChange={(e) => setItem({ ...item, price: e.target.value })}
                         className="pl-8 bg-white dark:bg-gray-900"
                         required
                         min="0"
@@ -283,9 +276,7 @@ export default function AddItemPage() {
                         type="number"
                         placeholder="10"
                         value={item.offer}
-                        onChange={(e) =>
-                          setItem({ ...item, offer: e.target.value })
-                        }
+                        onChange={(e) => setItem({ ...item, offer: e.target.value })}
                         className="pl-8 bg-white dark:bg-gray-900"
                         min="0"
                         max="100"
@@ -298,9 +289,7 @@ export default function AddItemPage() {
                     <Label htmlFor="type">Type</Label>
                     <Select
                       value={item.type}
-                      onValueChange={(value) =>
-                        setItem({ ...item, type: value })
-                      }
+                      onValueChange={(value) => setItem({ ...item, type: value })}
                     >
                       <SelectTrigger className="bg-white dark:bg-gray-900">
                         <SelectValue placeholder="Select type" />
@@ -364,7 +353,9 @@ export default function AddItemPage() {
                 {previewImages.length > 0 && (
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
-                      <Label>Selected ({previewImages.length}/5)</Label>
+                      <Label>
+                        Selected ({previewImages.length}/5)
+                      </Label>
                       <Button
                         type="button"
                         variant="ghost"
@@ -387,18 +378,11 @@ export default function AddItemPage() {
                           className="relative group rounded-lg overflow-hidden border"
                         >
                           <div className="aspect-square relative bg-gray-100 dark:bg-gray-800">
-                            {/* Use Next/Image for better behavior; unoptimized so blob/object URLs work without config */}
-                            <div className="w-full h-full relative">
-                              <Image
-                                src={preview}
-                                alt={`Preview ${index}`}
-                                fill
-                                sizes="200px"
-                                style={{ objectFit: "cover" }}
-                                unoptimized
-                              />
-                            </div>
-
+                            <img
+                              src={preview}
+                              alt={`Preview ${index}`}
+                              className="h-full w-full object-cover"
+                            />
                             <button
                               type="button"
                               onClick={() => removeImage(index)}
@@ -425,7 +409,9 @@ export default function AddItemPage() {
                       <Label htmlFor="available" className="font-medium">
                         Available
                       </Label>
-                      <p className="text-sm text-gray-500">Show in menu</p>
+                      <p className="text-sm text-gray-500">
+                        Show in menu
+                      </p>
                     </div>
                     <Switch
                       id="available"
@@ -442,7 +428,9 @@ export default function AddItemPage() {
                       <Label htmlFor="featured" className="font-medium">
                         Featured
                       </Label>
-                      <p className="text-sm text-gray-500">Highlight item</p>
+                      <p className="text-sm text-gray-500">
+                        Highlight item
+                      </p>
                     </div>
                     <Switch
                       id="featured"
