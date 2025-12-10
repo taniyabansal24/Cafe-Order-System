@@ -342,7 +342,7 @@ export default function SignInPage() {
                 </CardHeader>
                 <CardContent>
                   <p className="text-muted-foreground">
-                    Easily update your menu, prices, and special offers in real-time.
+                    Easily update your menu, prices, availability and special offers in real-time.
                   </p>
                 </CardContent>
               </Card>
