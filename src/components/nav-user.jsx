@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { signOut } from "next-auth/react";
-import { toast } from "sonner"; // Using sonner toast instead of useToast hook
+import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -34,28 +34,18 @@ export function NavUser({ user }) {
 
   const handleLogout = async () => {
     try {
-      // Show loading state
       toast.loading("Signing out...");
-
-      // Sign out using NextAuth
       const result = await signOut({
         redirect: false,
         callbackUrl: "/sign-in",
       });
-
-      // Clear loading and show success
+      
       toast.dismiss();
-      // Show success notification - CORRECTED
       toast.success("Logged out successfully");
-
-      // Redirect to sign-in page
       router.push(result.url);
-
-      // Optional: Force refresh to clear any cached data
       router.refresh();
     } catch (error) {
       console.error("Error during logout:", error);
-      // Error notification - CORRECTED
       toast.error("Logout failed", {
         description: error.message,
       });
@@ -67,15 +57,20 @@ export function NavUser({ user }) {
       <SidebarMenuItem>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <SidebarMenuButton
-              size="lg"
-              className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+            {/* Remove the SidebarMenuButton and use a regular button for debugging */}
+            <button
+              className="flex w-full items-center gap-3 rounded-lg p-2 text-left text-sm outline-none ring-sidebar-ring transition-[color,box-shadow] hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('Profile button clicked');
+              }}
             >
               <Avatar className="h-8 w-8 rounded-lg">
                 <AvatarImage src={user.avatar} alt={user.name} />
                 <AvatarFallback className="rounded-lg">
-                  {user.name.charAt(0)}
-                  {user.ownerName?.charAt(0) || ""}
+                  {user.name?.charAt(0) || 'C'}
+                  {user.ownerName?.charAt(0) || 'O'}
                 </AvatarFallback>
               </Avatar>
               <div className="grid flex-1 gap-0.5 text-left text-sm leading-tight">
@@ -88,10 +83,10 @@ export function NavUser({ user }) {
                 </span>
               </div>
               <ChevronsUpDown className="ml-auto size-4" />
-            </SidebarMenuButton>
+            </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent
-            className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
+            className="w-[var(--radix-dropdown-menu-trigger-width)] min-w-56 rounded-lg z-[9999]"
             side={isMobile ? "bottom" : "right"}
             align="end"
             sideOffset={4}
@@ -101,9 +96,9 @@ export function NavUser({ user }) {
                 <Avatar className="h-8 w-8 rounded-lg">
                   <AvatarImage src={user.avatar} alt={user.name} />
                   <AvatarFallback className="rounded-lg">
-                  {user.name.charAt(0)}
-                  {user.ownerName?.charAt(0) || ""}
-                </AvatarFallback>
+                    {user.name?.charAt(0) || 'C'}
+                    {user.ownerName?.charAt(0) || 'O'}
+                  </AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-medium">{user.name}</span>
@@ -122,23 +117,8 @@ export function NavUser({ user }) {
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            {/* <DropdownMenuGroup>
-              <DropdownMenuItem>
-                <BadgeCheck className="mr-2 h-4 w-4" />
-                <span>Account</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <CreditCard className="mr-2 h-4 w-4" />
-                <span>Billing</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Bell className="mr-2 h-4 w-4" />
-                <span>Notifications</span>
-              </DropdownMenuItem>
-            </DropdownMenuGroup> */}
-            {/* <DropdownMenuSeparator /> */}
             <DropdownMenuItem onClick={handleLogout}>
-              <LogOut onClick={handleLogout} className="mr-2 h-4 w-4" />
+              <LogOut className="mr-2 h-4 w-4" />
               <span>Log out</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
