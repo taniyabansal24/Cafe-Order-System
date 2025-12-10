@@ -378,7 +378,7 @@ export default function SignInPage() {
             <div className="mb-6 md:mb-0">
               <div className="flex items-center space-x-2 mb-4">
                 <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
-                  <Coffee className="h-6 w-6 text-white" />
+                  <Coffee className="h-6 w-6 text-white dark:invert" />
                 </div>
                 <span className="text-2xl font-bold bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
                   CafeFlow
