@@ -55,7 +55,8 @@ export default function ThemeWrapper({ children }) {
         enableSystem
         disableTransitionOnChange
       >
-        <div className="fixed top-4 right-4 z-50">
+        {/* Increased z-index to 9999 and added higher positioning */}
+        <div className="fixed top-4 right-6 z-[9999]">
           <ThemeToggle />
         </div>
         {children}
