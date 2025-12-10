@@ -1,3 +1,4 @@
+// src/components/theme-toggle.jsx
 "use client"
 
 import React, { useEffect, useState } from "react"
@@ -16,13 +17,17 @@ export function ThemeToggle() {
 
   return (
     <Button
-      variant="ghost"
+      variant="outline"
       size="icon"
       onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-      className="rounded-full"
+      className="rounded-full border-2 shadow-lg hover:shadow-xl transition-shadow bg-background/80 backdrop-blur-sm"
       aria-label="Toggle theme"
     >
-      {theme === "dark" ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+      {theme === "dark" ? (
+        <Sun className="w-5 h-5 text-yellow-500" />
+      ) : (
+        <Moon className="w-5 h-5 text-blue-700" />
+      )}
     </Button>
   )
 }
