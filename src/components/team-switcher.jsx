@@ -97,9 +97,9 @@ export function TeamSwitcher({ teams }) {
                 </div>
               </div>
 
-              {!isMobile && (
+              {/* {!isMobile && (
                 <ChevronsUpDown className="ml-auto size-4" />
-              )}
+              )} */}
             </SidebarMenuButton>
           </DropdownMenuTrigger>
           
